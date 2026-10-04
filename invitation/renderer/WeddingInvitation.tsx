@@ -35,6 +35,28 @@ type WeddingInvitationProps = {
   children?: ReactNode;
 };
 
+type ThemePresentation = {
+  backgroundClassName: string;
+  contentClassName: string;
+  envelopeCardClassName: string;
+  familyPanelClassName: string;
+  familyPatternClassName: string;
+  familyInsetClassName: string;
+  heroContentClassName: string;
+  heroDateClassName: string;
+  heroKickerClassName: string;
+  heroMessageClassName: string;
+  heroOverlayClassName: string;
+  heroRuleClassName: string;
+  heroTitleClassName: string;
+  heroWashClassName: string;
+  imageClassName: string;
+  locationDetailsClassName: string;
+  ornament: "ceremonial" | "classic" | "minimal";
+  sectionClassName: string;
+  showFloralCorners: boolean;
+};
+
 export function WeddingInvitation({
   event,
   mode,
@@ -48,17 +70,16 @@ export function WeddingInvitation({
     mode === "preview" ? mergePreviewContent(event) : normalizeContent(event);
   const locations = getLocations(event, content, mode);
   const heroImage = content.heroImage;
-  const sectionClassName = getSectionClassName(theme.frame);
-  const isTraditional = theme.frame === "traditional";
+  const presentation = getThemePresentation(theme.frame);
+  const usesCeremonialLayout = true;
 
   return (
     <article
       className={[
         "min-h-dvh overflow-hidden",
-        isTraditional
-          ? "bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.75),transparent_22%),radial-gradient(circle_at_82%_20%,rgba(255,255,255,0.55),transparent_20%)]"
-          : "",
+        presentation.backgroundClassName,
       ].join(" ")}
+      data-theme-frame={theme.frame}
       style={
         {
           "--inv-bg": colors.background,
@@ -77,7 +98,8 @@ export function WeddingInvitation({
       {recipient ? (
         <EnvelopeIntro
           dateLabel={event.dateLabel}
-          isTraditional={isTraditional}
+          isTraditional={usesCeremonialLayout}
+          presentation={presentation}
           recipient={recipient}
           title={event.coupleName}
         />
@@ -86,8 +108,9 @@ export function WeddingInvitation({
       <InvitationHero
         dateLabel={event.dateLabel}
         image={heroImage}
-        isTraditional={isTraditional}
+        isTraditional={usesCeremonialLayout}
         message={event.mainInvitationMessage}
+        presentation={presentation}
         title={event.coupleName}
         tagline={content.tagline}
         themeFrame={theme.frame}
@@ -96,40 +119,46 @@ export function WeddingInvitation({
       <div
         className={[
           "mx-auto px-5 py-14 sm:px-8 lg:px-10 lg:py-20",
-          isTraditional ? "max-w-[920px]" : "max-w-6xl",
+          presentation.contentClassName,
         ].join(" ")}
       >
         <FamilySection
-          className={sectionClassName}
+          className={presentation.sectionClassName}
           content={content.family}
-          isTraditional={isTraditional}
+          isTraditional={usesCeremonialLayout}
+          presentation={presentation}
         />
         <SaveTheDateSection
-          className={sectionClassName}
+          className={presentation.sectionClassName}
           content={content.saveTheDate}
           dateLabel={event.dateLabel}
-          isTraditional={isTraditional}
+          isTraditional={usesCeremonialLayout}
+          presentation={presentation}
         />
         <LocationsSection
-          className={sectionClassName}
-          isTraditional={isTraditional}
+          className={presentation.sectionClassName}
+          isTraditional={usesCeremonialLayout}
           locations={locations}
+          presentation={presentation}
         />
         <TimelineSection
-          className={sectionClassName}
-          isTraditional={isTraditional}
+          className={presentation.sectionClassName}
+          isTraditional={usesCeremonialLayout}
           items={content.itinerary}
+          presentation={presentation}
           title="Itinerario"
         />
         <DressCodeSection
-          className={sectionClassName}
+          className={presentation.sectionClassName}
           content={content.dressCode}
-          isTraditional={isTraditional}
+          isTraditional={usesCeremonialLayout}
+          presentation={presentation}
         />
         {(children || mode === "preview") ? (
           <RsvpSection
-            className={sectionClassName}
-            isTraditional={isTraditional}
+            className={presentation.sectionClassName}
+            isTraditional={usesCeremonialLayout}
+            presentation={presentation}
             recipient={recipient}
             showPreviewFallback={mode === "preview" && !children}
           >
@@ -137,24 +166,28 @@ export function WeddingInvitation({
           </RsvpSection>
         ) : null}
         <GiftsSection
-          className={sectionClassName}
+          className={presentation.sectionClassName}
           gifts={content.gifts}
-          isTraditional={isTraditional}
+          isTraditional={usesCeremonialLayout}
+          presentation={presentation}
         />
         <GallerySection
-          className={sectionClassName}
+          className={presentation.sectionClassName}
           images={content.galleryImages}
-          isTraditional={isTraditional}
+          isTraditional={usesCeremonialLayout}
+          presentation={presentation}
         />
         <StorySection
-          className={sectionClassName}
-          isTraditional={isTraditional}
+          className={presentation.sectionClassName}
+          isTraditional={usesCeremonialLayout}
           items={content.story}
+          presentation={presentation}
         />
         <ClosingSection
-          className={sectionClassName}
-          isTraditional={isTraditional}
+          className={presentation.sectionClassName}
+          isTraditional={usesCeremonialLayout}
           message={content.closingMessage}
+          presentation={presentation}
           title={event.coupleName}
         />
       </div>
@@ -165,11 +198,13 @@ export function WeddingInvitation({
 function EnvelopeIntro({
   dateLabel,
   isTraditional,
+  presentation,
   recipient,
   title,
 }: {
   dateLabel: string;
   isTraditional: boolean;
+  presentation: ThemePresentation;
   recipient: NonNullable<WeddingInvitationProps["recipient"]>;
   title: string;
 }) {
@@ -179,12 +214,16 @@ function EnvelopeIntro({
         className={[
           "relative w-full max-w-xl border border-[color:var(--inv-border)] bg-[color:var(--inv-surface)] px-6 py-10 sm:px-10 sm:py-14",
           isTraditional
-            ? "shadow-none outline outline-1 outline-offset-[-12px] outline-[color:var(--inv-border)]"
+            ? presentation.envelopeCardClassName
             : "shadow-[0_28px_100px_rgba(16,42,67,0.10)]",
         ].join(" ")}
       >
-        {isTraditional ? <FloralCorner position="top-left" /> : null}
-        {isTraditional ? <FloralCorner position="bottom-right" /> : null}
+        {presentation.showFloralCorners ? (
+          <FloralCorner position="top-left" />
+        ) : null}
+        {presentation.showFloralCorners ? (
+          <FloralCorner position="bottom-right" />
+        ) : null}
         <p
           className={[
             "text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--inv-secondary)]",
@@ -235,6 +274,7 @@ function InvitationHero({
   image,
   isTraditional,
   message,
+  presentation,
   tagline,
   themeFrame,
   title,
@@ -243,6 +283,7 @@ function InvitationHero({
   image?: WeddingInvitationContent["heroImage"];
   isTraditional: boolean;
   message?: string | null;
+  presentation: ThemePresentation;
   tagline?: string | null;
   themeFrame: string;
   title: string;
@@ -265,25 +306,25 @@ function InvitationHero({
         ) : (
           <div className="absolute inset-0 bg-[color:var(--inv-primary)]" />
         )}
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.34),rgba(0,0,0,0.13)_56%,rgba(0,0,0,0.2)_100%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),transparent_24%,transparent_68%,rgba(0,0,0,0.26))]" />
+        <div className={presentation.heroOverlayClassName} />
+        <div className={presentation.heroWashClassName} />
 
-        <div className="relative mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[56rem] flex-col items-center justify-center text-white">
-          <p className="text-[0.66rem] font-normal uppercase tracking-[0.42em] text-[#FFF8EA]/84 sm:text-[0.72rem]">
+        <div className={presentation.heroContentClassName}>
+          <p className={presentation.heroKickerClassName}>
             Nos casamos
           </p>
-          <h1 className="mx-auto mt-8 max-w-[52rem] text-balance font-serif text-[clamp(3.35rem,8vw,6.35rem)] font-normal leading-[0.92] text-[#FFF8EA] drop-shadow-[0_3px_14px_rgba(0,0,0,0.24)] sm:leading-[0.94]">
+          <h1 className={presentation.heroTitleClassName}>
             <HeroTitle title={title} />
           </h1>
           <div
             aria-hidden="true"
-            className="mt-8 h-px w-16 bg-[#FFF8EA]/46 sm:w-20"
+            className={presentation.heroRuleClassName}
           />
-          <p className="mt-11 font-serif text-[1.05rem] font-normal text-[#FFF8EA]/90 drop-shadow-[0_2px_10px_rgba(0,0,0,0.22)] sm:text-xl">
+          <p className={presentation.heroDateClassName}>
             {dateLabel}
           </p>
           {tagline || message ? (
-            <p className="mx-auto mt-4 max-w-[34rem] font-serif text-[0.98rem] font-normal italic leading-7 text-[#FFF8EA]/80 drop-shadow-[0_2px_10px_rgba(0,0,0,0.2)] sm:text-[1.08rem] sm:leading-8">
+            <p className={presentation.heroMessageClassName}>
               {tagline ?? message}
             </p>
           ) : null}
@@ -388,10 +429,12 @@ function FamilySection({
   className,
   content,
   isTraditional,
+  presentation,
 }: {
   className: string;
   content: WeddingInvitationContent["family"];
   isTraditional: boolean;
+  presentation: ThemePresentation;
 }) {
   if (!content) {
     return null;
@@ -411,19 +454,23 @@ function FamilySection({
   return (
     <section className={className}>
       {isTraditional ? (
-        <div className="relative mx-auto max-w-[760px] overflow-hidden border border-[color:var(--inv-border)]/65 bg-[linear-gradient(180deg,rgba(255,253,248,0.94),rgba(250,244,236,0.9)),radial-gradient(circle_at_50%_-8%,rgba(255,255,255,0.92),transparent_38%),radial-gradient(circle_at_50%_108%,color-mix(in_srgb,var(--inv-accent)_13%,transparent),transparent_34%)] px-6 py-12 text-center shadow-[0_30px_90px_rgba(16,42,67,0.08)] outline outline-1 outline-offset-[-14px] outline-[color:var(--inv-border)]/45 sm:px-12 sm:py-14 lg:px-16 lg:py-16">
+        <div className={presentation.familyPanelClassName}>
           <div
             aria-hidden="true"
-            className="absolute inset-0 opacity-[0.1] [background-image:radial-gradient(circle_at_1px_1px,color-mix(in_srgb,var(--inv-muted)_20%,transparent)_1px,transparent_0)] [background-size:22px_22px]"
+            className={presentation.familyPatternClassName}
           />
           <div
             aria-hidden="true"
-            className="absolute inset-4 border border-[color:var(--inv-border)]/35 sm:inset-5"
+            className={presentation.familyInsetClassName}
           />
-          <CeremonialFloralCorner position="top-left" />
-          <CeremonialFloralCorner position="top-right" />
-          <CeremonialFloralCorner position="bottom-left" />
-          <CeremonialFloralCorner position="bottom-right" />
+          {presentation.showFloralCorners ? (
+            <>
+              <CeremonialFloralCorner position="top-left" />
+              <CeremonialFloralCorner position="top-right" />
+              <CeremonialFloralCorner position="bottom-left" />
+              <CeremonialFloralCorner position="bottom-right" />
+            </>
+          ) : null}
           <div className="relative mx-auto max-w-[40rem]">
             <p className="font-serif text-[1.05rem] italic leading-7 text-[color:var(--inv-secondary)] sm:text-[1.2rem]">
               Con la bendición de Dios
@@ -431,9 +478,9 @@ function FamilySection({
             <h2 className="mx-auto mt-4 max-w-xl text-balance font-serif text-[2.25rem] font-normal leading-[1.03] text-[color:var(--inv-primary)] sm:text-[3rem]">
               y el amor de nuestros padres
             </h2>
-            <CeremonialOrnament />
+            <ThemeOrnament presentation={presentation} />
             <TraditionalFamilyGroups groups={groups} />
-            <CeremonialOrnament compact />
+            <ThemeOrnament compact presentation={presentation} />
             <p className="mx-auto mt-6 max-w-md font-serif text-[1.16rem] font-normal italic leading-8 text-[color:var(--inv-muted)] sm:text-[1.32rem]">
               Nos complace invitarte a ser parte de este gran día.
             </p>
@@ -579,11 +626,13 @@ function SaveTheDateSection({
   content,
   dateLabel,
   isTraditional,
+  presentation,
 }: {
   className: string;
   content: WeddingInvitationContent["saveTheDate"];
   dateLabel: string;
   isTraditional: boolean;
+  presentation: ThemePresentation;
 }) {
   if (!content) {
     return null;
@@ -623,7 +672,7 @@ function SaveTheDateSection({
             <h2 className="mt-4 font-serif text-[2.35rem] font-normal leading-none text-[color:var(--inv-primary)] sm:text-[3.2rem]">
               El gran dia
             </h2>
-            <CeremonialOrnament compact />
+            <ThemeOrnament compact presentation={presentation} />
             <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[color:var(--inv-muted)] sm:text-base">
               {content.message ?? dateLabel}
             </p>
@@ -665,10 +714,12 @@ function LocationsSection({
   className,
   isTraditional,
   locations,
+  presentation,
 }: {
   className: string;
   isTraditional: boolean;
   locations: InvitationLocation[];
+  presentation: ThemePresentation;
 }) {
   if (!locations.length) {
     return null;
@@ -684,7 +735,7 @@ function LocationsSection({
           <h2 className="mt-4 font-serif text-[2.35rem] font-normal leading-none text-[color:var(--inv-primary)] sm:text-[3.25rem]">
             Donde celebraremos
           </h2>
-          <CeremonialOrnament compact />
+          <ThemeOrnament compact presentation={presentation} />
           <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-[color:var(--inv-muted)] sm:text-base">
             Cada momento tiene un lugar especial preparado para recibirlos.
           </p>
@@ -698,11 +749,14 @@ function LocationsSection({
               {location.image ? (
                 <img
                   alt=""
-                  className="h-64 w-full object-cover sm:h-80"
+                  className={[
+                    "h-64 w-full object-cover sm:h-80",
+                    presentation.imageClassName,
+                  ].join(" ")}
                   src={location.image}
                 />
               ) : null}
-              <div className="mx-auto border-x border-b border-[color:var(--inv-border)]/65 px-5 py-7 sm:px-10 sm:py-8">
+              <div className={presentation.locationDetailsClassName}>
                 <p className="text-[0.7rem] font-medium uppercase tracking-[0.24em] text-[color:var(--inv-secondary)]">
                   {location.kind}
                 </p>
@@ -741,6 +795,7 @@ function LocationsSection({
       <SectionHeader
         eyebrow="Lugares"
         isTraditional={isTraditional}
+        presentation={presentation}
         title="Donde celebraremos"
         text="Cada momento tiene un lugar especial preparado para recibirlos."
       />
@@ -794,11 +849,13 @@ function TimelineSection({
   className,
   isTraditional,
   items,
+  presentation,
   title,
 }: {
   className: string;
   isTraditional: boolean;
   items?: InvitationTimelineItem[];
+  presentation: ThemePresentation;
   title: string;
 }) {
   if (!items?.length) {
@@ -811,6 +868,7 @@ function TimelineSection({
         <SectionHeader
           eyebrow="Celebracion"
           isTraditional={isTraditional}
+          presentation={presentation}
           title={title}
         />
         <div className="relative mx-auto mt-8 max-w-2xl sm:mt-9">
@@ -852,6 +910,7 @@ function TimelineSection({
       <SectionHeader
         eyebrow="Celebracion"
         isTraditional={isTraditional}
+        presentation={presentation}
         title={title}
       />
       <div className="mt-10 grid gap-4">
@@ -884,10 +943,12 @@ function DressCodeSection({
   className,
   content,
   isTraditional,
+  presentation,
 }: {
   className: string;
   content: WeddingInvitationContent["dressCode"];
   isTraditional: boolean;
+  presentation: ThemePresentation;
 }) {
   if (!content) {
     return null;
@@ -913,7 +974,7 @@ function DressCodeSection({
           <h2 className="mt-4 font-serif text-[2.35rem] font-normal leading-none text-[color:var(--inv-primary)] sm:text-[3.2rem]">
             {content.style ?? "Vestimenta"}
           </h2>
-          <CeremonialOrnament compact />
+          <ThemeOrnament compact presentation={presentation} />
         </div>
 
         <div className="mx-auto mt-9 grid max-w-4xl gap-9 md:grid-cols-2 md:gap-12">
@@ -935,7 +996,7 @@ function DressCodeSection({
 
         {content.children ? (
           <div className="mx-auto mt-10 max-w-xl text-center">
-            <CeremonialOrnament compact />
+            <ThemeOrnament compact presentation={presentation} />
             <h3 className="font-serif text-[1.85rem] font-normal leading-tight text-[color:var(--inv-primary)]">
               Niños
             </h3>
@@ -1090,12 +1151,14 @@ function RsvpSection({
   children,
   className,
   isTraditional,
+  presentation,
   recipient,
   showPreviewFallback,
 }: {
   children?: ReactNode;
   className: string;
   isTraditional: boolean;
+  presentation: ThemePresentation;
   recipient?: WeddingInvitationProps["recipient"];
   showPreviewFallback: boolean;
 }) {
@@ -1115,7 +1178,9 @@ function RsvpSection({
         <h2 className="mt-3 font-serif text-[2.35rem] font-normal leading-none text-[color:var(--inv-primary)] sm:text-[3.25rem]">
           Confirma tu asistencia
         </h2>
-        {isTraditional ? <Ornament compact /> : null}
+        {isTraditional ? (
+          <ThemeOrnament compact presentation={presentation} />
+        ) : null}
         <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[color:var(--inv-muted)] sm:text-base">
           Tu presencia es el regalo que más esperamos.
         </p>
@@ -1151,10 +1216,12 @@ function GiftsSection({
   className,
   gifts,
   isTraditional,
+  presentation,
 }: {
   className: string;
   gifts?: WeddingInvitationContent["gifts"];
   isTraditional: boolean;
+  presentation: ThemePresentation;
 }) {
   if (!gifts?.length) {
     return null;
@@ -1187,7 +1254,7 @@ function GiftsSection({
           <p className="mx-auto mt-4 max-w-xl text-sm leading-7 text-[color:var(--inv-muted)] sm:text-base">
             Gracias por acompañarnos con tanto cariño.
           </p>
-          <CeremonialOrnament compact />
+          <ThemeOrnament compact presentation={presentation} />
         </div>
 
         <div className="mx-auto mt-8 max-w-4xl">
@@ -1486,10 +1553,12 @@ function GallerySection({
   className,
   images,
   isTraditional,
+  presentation,
 }: {
   className: string;
   images?: WeddingInvitationContent["galleryImages"];
   isTraditional: boolean;
+  presentation: ThemePresentation;
 }) {
   if (!images?.length) {
     return null;
@@ -1499,6 +1568,7 @@ function GallerySection({
     <section className={className}>
       <SectionHeader
         eyebrow="Fotos"
+        presentation={presentation}
         isTraditional={isTraditional}
         title="Nuestra sesión"
         text="Una pequeña colección de momentos que queremos compartir."
@@ -1512,10 +1582,12 @@ function StorySection({
   className,
   isTraditional,
   items,
+  presentation,
 }: {
   className: string;
   isTraditional: boolean;
   items?: WeddingInvitationContent["story"];
+  presentation: ThemePresentation;
 }) {
   const storyItems = getStoryItems(items);
 
@@ -1527,6 +1599,7 @@ function StorySection({
     <section className={className}>
       <SectionHeader
         eyebrow="Historia"
+        presentation={presentation}
         isTraditional={isTraditional}
         title="Nuestra historia"
         text="Los momentos que nos trajeron hasta este dia."
@@ -1576,6 +1649,7 @@ function StorySection({
                   <figure
                     className={[
                       "order-2 overflow-hidden border border-[color:var(--inv-border)] bg-[color:var(--inv-background)] p-2 md:row-start-1",
+                      presentation.imageClassName,
                       index % 2 ? "md:col-start-3" : "md:col-start-1",
                       storyItems.length === 1
                         ? "md:mx-auto md:mt-6 md:max-w-2xl"
@@ -1657,11 +1731,13 @@ function ClosingSection({
   className,
   isTraditional,
   message,
+  presentation,
   title,
 }: {
   className: string;
   isTraditional: boolean;
   message?: string | null;
+  presentation: ThemePresentation;
   title: string;
 }) {
   if (!message) {
@@ -1675,7 +1751,11 @@ function ClosingSection({
       <div className="mx-auto max-w-3xl px-2 text-center">
         <div className="mx-auto h-px w-full max-w-md bg-[color:var(--inv-border)]/35" />
         <div className="mx-auto py-12 sm:py-14">
-          {isTraditional ? <CeremonialOrnament compact /> : <Ornament compact />}
+          {isTraditional ? (
+            <ThemeOrnament compact presentation={presentation} />
+          ) : (
+            <Ornament compact />
+          )}
           <p className="mx-auto mt-6 max-w-2xl text-balance font-serif text-[2.15rem] font-normal leading-[1.28] text-[color:var(--inv-primary)] sm:text-[2.7rem] sm:leading-[1.22]">
             {messageLines.map((line) => (
               <span className="block" key={line}>
@@ -1723,11 +1803,13 @@ function getClosingMessageLines(message: string) {
 function SectionHeader({
   eyebrow,
   isTraditional = false,
+  presentation,
   text,
   title,
 }: {
   eyebrow: string;
   isTraditional?: boolean;
+  presentation?: ThemePresentation;
   text?: string;
   title: string;
 }) {
@@ -1749,7 +1831,12 @@ function SectionHeader({
       >
         {title}
       </h2>
-      {isTraditional ? <Ornament compact /> : null}
+      {isTraditional ? (
+        <ThemeOrnament
+          compact
+          presentation={presentation ?? getThemePresentation("traditional")}
+        />
+      ) : null}
       {text ? (
         <p className="mx-auto mt-5 max-w-2xl text-sm leading-7 text-[color:var(--inv-muted)] sm:text-base">
           {text}
@@ -1815,19 +1902,167 @@ function getLocations(
 function getSectionClassName(frame: string) {
   const rhythm = "py-12 sm:py-16 lg:py-20";
 
-  if (frame === "traditional") {
-    return `${rhythm} border-b border-[color:var(--inv-border)]/55`;
-  }
-
-  if (frame === "minimal") {
-    return rhythm;
+  if (frame === "classic" || frame === "minimal") {
+    return `${rhythm} border-b border-[color:var(--inv-border)]/38`;
   }
 
   if (frame === "organic") {
-    return `${rhythm} rounded-[34px]`;
+    return `${rhythm} border-b border-[color:var(--inv-border)]/45`;
   }
 
-  return rhythm;
+  if (frame === "ornate") {
+    return `${rhythm} border-b border-[color:var(--inv-border)]/55`;
+  }
+
+  return `${rhythm} border-b border-[color:var(--inv-border)]/55`;
+}
+
+function getThemePresentation(frame: string): ThemePresentation {
+  const base: ThemePresentation = {
+    backgroundClassName:
+      "bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.75),transparent_22%),radial-gradient(circle_at_82%_20%,rgba(255,255,255,0.55),transparent_20%)]",
+    contentClassName: "max-w-[920px]",
+    envelopeCardClassName:
+      "shadow-none outline outline-1 outline-offset-[-12px] outline-[color:var(--inv-border)]",
+    familyPanelClassName:
+      "relative mx-auto max-w-[760px] overflow-hidden border border-[color:var(--inv-border)]/65 bg-[linear-gradient(180deg,rgba(255,253,248,0.94),rgba(250,244,236,0.9)),radial-gradient(circle_at_50%_-8%,rgba(255,255,255,0.92),transparent_38%),radial-gradient(circle_at_50%_108%,color-mix(in_srgb,var(--inv-accent)_13%,transparent),transparent_34%)] px-6 py-12 text-center shadow-[0_30px_90px_rgba(16,42,67,0.08)] outline outline-1 outline-offset-[-14px] outline-[color:var(--inv-border)]/45 sm:px-12 sm:py-14 lg:px-16 lg:py-16",
+    familyPatternClassName:
+      "absolute inset-0 opacity-[0.1] [background-image:radial-gradient(circle_at_1px_1px,color-mix(in_srgb,var(--inv-muted)_20%,transparent)_1px,transparent_0)] [background-size:22px_22px]",
+    familyInsetClassName:
+      "absolute inset-4 border border-[color:var(--inv-border)]/35 sm:inset-5",
+    heroContentClassName:
+      "relative mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[56rem] flex-col items-center justify-center text-white",
+    heroDateClassName:
+      "mt-11 font-serif text-[1.05rem] font-normal text-[#FFF8EA]/90 drop-shadow-[0_2px_10px_rgba(0,0,0,0.22)] sm:text-xl",
+    heroKickerClassName:
+      "text-[0.66rem] font-normal uppercase tracking-[0.42em] text-[#FFF8EA]/84 sm:text-[0.72rem]",
+    heroMessageClassName:
+      "mx-auto mt-4 max-w-[34rem] font-serif text-[0.98rem] font-normal italic leading-7 text-[#FFF8EA]/80 drop-shadow-[0_2px_10px_rgba(0,0,0,0.2)] sm:text-[1.08rem] sm:leading-8",
+    heroOverlayClassName:
+      "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.34),rgba(0,0,0,0.13)_56%,rgba(0,0,0,0.2)_100%)]",
+    heroRuleClassName: "mt-8 h-px w-16 bg-[#FFF8EA]/46 sm:w-20",
+    heroTitleClassName:
+      "mx-auto mt-8 max-w-[52rem] text-balance font-serif text-[clamp(3.35rem,8vw,6.35rem)] font-normal leading-[0.92] text-[#FFF8EA] drop-shadow-[0_3px_14px_rgba(0,0,0,0.24)] sm:leading-[0.94]",
+    heroWashClassName:
+      "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.12),transparent_24%,transparent_68%,rgba(0,0,0,0.26))]",
+    imageClassName: "",
+    locationDetailsClassName:
+      "mx-auto border-x border-b border-[color:var(--inv-border)]/65 px-5 py-7 sm:px-10 sm:py-8",
+    ornament: "ceremonial",
+    sectionClassName: getSectionClassName(frame),
+    showFloralCorners: true,
+  };
+
+  if (frame === "ornate") {
+    return {
+      ...base,
+      backgroundClassName:
+        "bg-[radial-gradient(circle_at_18%_12%,rgba(255,255,255,0.82),transparent_23%),radial-gradient(circle_at_82%_20%,color-mix(in_srgb,var(--inv-accent)_18%,transparent),transparent_24%),radial-gradient(circle_at_50%_100%,color-mix(in_srgb,var(--inv-secondary)_10%,transparent),transparent_35%)]",
+      contentClassName: "max-w-[980px]",
+      envelopeCardClassName:
+        "shadow-[0_30px_90px_rgba(16,42,67,0.12)] outline outline-1 outline-offset-[-16px] outline-[color:var(--inv-accent)]/55",
+      familyPanelClassName:
+        "relative mx-auto max-w-[820px] overflow-hidden border border-[color:var(--inv-accent)]/55 bg-[linear-gradient(180deg,rgba(255,253,248,0.96),rgba(250,244,236,0.9)),radial-gradient(circle_at_50%_-8%,color-mix(in_srgb,var(--inv-accent)_18%,transparent),transparent_38%),radial-gradient(circle_at_50%_108%,color-mix(in_srgb,var(--inv-secondary)_11%,transparent),transparent_34%)] px-6 py-12 text-center shadow-[0_34px_100px_rgba(16,42,67,0.12)] outline outline-1 outline-offset-[-18px] outline-[color:var(--inv-border)]/55 sm:px-12 sm:py-14 lg:px-16 lg:py-16",
+      heroOverlayClassName:
+        "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.42),rgba(0,0,0,0.16)_52%,rgba(0,0,0,0.32)_100%)]",
+      heroRuleClassName: "mt-9 h-px w-28 bg-[#FFF8EA]/58 sm:w-36",
+      imageClassName: "p-2 shadow-[0_26px_70px_rgba(16,42,67,0.10)]",
+      locationDetailsClassName:
+        "mx-auto border-x border-b border-[color:var(--inv-accent)]/55 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.36))] px-5 py-8 shadow-[0_18px_60px_rgba(16,42,67,0.08)] sm:px-10 sm:py-9",
+    };
+  }
+
+  if (frame === "classic") {
+    return {
+      ...base,
+      backgroundClassName:
+        "bg-[linear-gradient(180deg,rgba(255,255,255,0.55),transparent_30%,transparent_70%,rgba(255,255,255,0.38))]",
+      contentClassName: "max-w-[860px]",
+      envelopeCardClassName:
+        "shadow-none outline outline-1 outline-offset-[-10px] outline-[color:var(--inv-border)]/70",
+      familyPanelClassName:
+        "relative mx-auto max-w-[720px] overflow-hidden border border-[color:var(--inv-border)]/70 bg-[color:var(--inv-surface)] px-6 py-12 text-center shadow-none outline outline-1 outline-offset-[-12px] outline-[color:var(--inv-border)]/30 sm:px-12 sm:py-14 lg:px-16 lg:py-16",
+      familyPatternClassName: "absolute inset-0 opacity-0",
+      heroOverlayClassName:
+        "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24),rgba(0,0,0,0.18)_55%,rgba(0,0,0,0.36))]",
+      heroRuleClassName: "mt-8 h-px w-24 bg-[#FFF8EA]/52",
+      imageClassName: "grayscale-[12%]",
+      locationDetailsClassName:
+        "mx-auto border-x border-b border-[color:var(--inv-border)]/65 bg-[color:var(--inv-surface)]/45 px-5 py-7 sm:px-10 sm:py-8",
+      ornament: "classic",
+      showFloralCorners: false,
+    };
+  }
+
+  if (frame === "organic") {
+    return {
+      ...base,
+      backgroundClassName:
+        "bg-[radial-gradient(circle_at_16%_14%,rgba(255,255,255,0.72),transparent_24%),radial-gradient(circle_at_84%_18%,color-mix(in_srgb,var(--inv-primary)_10%,transparent),transparent_23%),radial-gradient(circle_at_50%_100%,color-mix(in_srgb,var(--inv-accent)_16%,transparent),transparent_36%)]",
+      contentClassName: "max-w-[940px]",
+      envelopeCardClassName:
+        "rounded-t-[44px] shadow-[0_26px_80px_rgba(16,42,67,0.10)] outline outline-1 outline-offset-[-14px] outline-[color:var(--inv-border)]/55",
+      familyPanelClassName:
+        "relative mx-auto max-w-[780px] overflow-hidden rounded-t-[56px] border border-[color:var(--inv-border)]/60 bg-[linear-gradient(180deg,rgba(255,253,248,0.94),rgba(250,247,238,0.9)),radial-gradient(circle_at_16%_0%,color-mix(in_srgb,var(--inv-primary)_10%,transparent),transparent_30%),radial-gradient(circle_at_82%_105%,color-mix(in_srgb,var(--inv-accent)_16%,transparent),transparent_34%)] px-6 py-12 text-center shadow-[0_28px_80px_rgba(16,42,67,0.09)] sm:px-12 sm:py-14 lg:px-16 lg:py-16",
+      familyInsetClassName:
+        "absolute inset-4 rounded-t-[44px] border border-[color:var(--inv-border)]/28 sm:inset-5",
+      heroOverlayClassName:
+        "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(44,33,29,0.31),rgba(44,33,29,0.12)_58%,rgba(44,33,29,0.24)_100%)]",
+      heroRuleClassName: "mt-8 h-px w-20 bg-[#FFF8EA]/44 sm:w-28",
+      imageClassName: "rounded-t-[32px]",
+      locationDetailsClassName:
+        "mx-auto rounded-b-[32px] border-x border-b border-[color:var(--inv-border)]/55 bg-[color:var(--inv-surface)]/35 px-5 py-7 sm:px-10 sm:py-8",
+      ornament: "classic",
+      showFloralCorners: false,
+    };
+  }
+
+  if (frame === "minimal") {
+    return {
+      ...base,
+      backgroundClassName:
+        "bg-[linear-gradient(180deg,rgba(255,255,255,0.62),transparent_32%,transparent_72%,rgba(255,255,255,0.42))]",
+      contentClassName: "max-w-[840px]",
+      envelopeCardClassName:
+        "shadow-none outline outline-1 outline-offset-[-8px] outline-[color:var(--inv-border)]/38",
+      familyPanelClassName:
+        "relative mx-auto max-w-[700px] overflow-hidden border-y border-[color:var(--inv-border)]/55 bg-transparent px-4 py-12 text-center shadow-none sm:px-8 sm:py-14 lg:px-10 lg:py-16",
+      familyPatternClassName: "absolute inset-0 opacity-0",
+      familyInsetClassName: "absolute inset-0 border-0",
+      heroContentClassName:
+        "relative mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[48rem] flex-col items-center justify-center text-white",
+      heroOverlayClassName:
+        "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18),rgba(0,0,0,0.16)_55%,rgba(0,0,0,0.38))]",
+      heroRuleClassName: "mt-8 h-px w-12 bg-[#FFF8EA]/42",
+      heroTitleClassName:
+        "mx-auto mt-8 max-w-[46rem] text-balance font-serif text-[clamp(3rem,7vw,5.75rem)] font-normal leading-[0.96] text-[#FFF8EA] drop-shadow-[0_2px_12px_rgba(0,0,0,0.2)]",
+      imageClassName: "p-0",
+      locationDetailsClassName:
+        "mx-auto border-b border-[color:var(--inv-border)]/55 px-4 py-7 sm:px-8 sm:py-8",
+      ornament: "minimal",
+      showFloralCorners: false,
+    };
+  }
+
+  return base;
+}
+
+function ThemeOrnament({
+  compact = false,
+  presentation,
+}: {
+  compact?: boolean;
+  presentation: ThemePresentation;
+}) {
+  if (presentation.ornament === "minimal") {
+    return <MinimalOrnament compact={compact} />;
+  }
+
+  if (presentation.ornament === "classic") {
+    return <Ornament compact={compact} />;
+  }
+
+  return <CeremonialOrnament compact={compact} />;
 }
 
 function Ornament({ compact = false }: { compact?: boolean }) {
@@ -1842,6 +2077,20 @@ function Ornament({ compact = false }: { compact?: boolean }) {
       <span className="h-px w-12 bg-[color:var(--inv-border)]" />
       <span className="size-1.5 rotate-45 border border-[color:var(--inv-accent)]" />
       <span className="h-px w-12 bg-[color:var(--inv-border)]" />
+    </div>
+  );
+}
+
+function MinimalOrnament({ compact = false }: { compact?: boolean }) {
+  return (
+    <div
+      aria-hidden="true"
+      className={[
+        "mx-auto flex items-center justify-center",
+        compact ? "my-5" : "my-7",
+      ].join(" ")}
+    >
+      <span className="h-px w-20 bg-[color:var(--inv-border)]/75" />
     </div>
   );
 }
