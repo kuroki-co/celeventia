@@ -38,20 +38,29 @@ export async function changeInvitationDesign(
     return { error: "Necesitas iniciar sesion." };
   }
 
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("events")
     .update({
       theme_id: parsed.data.themeId,
       palette_id: parsed.data.paletteId,
     })
-    .eq("id", parsed.data.eventId);
+    .eq("id", parsed.data.eventId)
+    .select("id, slug")
+    .maybeSingle<{ id: string; slug: string | null }>();
 
   if (error) {
     return { error: "No pudimos guardar el diseno." };
   }
 
+  if (!data) {
+    return { error: "No pudimos confirmar el evento autorizado." };
+  }
+
   revalidatePath("/admin/personal/invitacion/preview");
   revalidatePath("/admin/personal/invitacion/publicar");
+  if (data.slug) {
+    revalidatePath(`/i/${data.slug}`);
+  }
 
   return { success: "Diseno guardado." };
 }

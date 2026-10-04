@@ -1,9 +1,9 @@
 "use client";
 
-import { Check, Palette, X } from "lucide-react";
-import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { Check, Palette, RotateCcw, X } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
+import { InvitationThemeThumbnail } from "@/invitation/renderer/InvitationThemeThumbnail";
 import { WeddingInvitation } from "@/invitation/renderer/WeddingInvitation";
 import {
   getInvitationPalette,
@@ -20,6 +20,13 @@ type InvitationPreviewPageProps = {
   event: PersonalInvitationEvent;
 };
 
+type DesignSelection = {
+  themeId: InvitationThemeId;
+  paletteId: InvitationPaletteId;
+};
+
+type SaveStatus = "saved" | "pending" | "saving" | "error";
+
 export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
   const [themeId, setThemeId] = useState<InvitationThemeId>(event.themeId);
   const [paletteId, setPaletteId] = useState<InvitationPaletteId>(
@@ -27,9 +34,20 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
   );
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [message, setMessage] = useState("Guardado");
-  const [isPending, startTransition] = useTransition();
   const lastScrollYRef = useRef(0);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const triggerRef = useRef<HTMLButtonElement | null>(null);
+  const desiredDesignRef = useRef<DesignSelection>({
+    paletteId: event.paletteId,
+    themeId: event.themeId,
+  });
+  const savedDesignRef = useRef<DesignSelection>({
+    paletteId: event.paletteId,
+    themeId: event.themeId,
+  });
+  const isSavingRef = useRef(false);
   const currentTheme = getInvitationTheme(themeId);
   const currentPalette = getInvitationPalette(paletteId);
   const showFloatingControls = isPanelOpen || isControlsVisible;
@@ -63,34 +81,139 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  function persistDesign(
-    nextThemeId: InvitationThemeId,
-    nextPaletteId: InvitationPaletteId,
-  ) {
-    setThemeId(nextThemeId);
-    setPaletteId(nextPaletteId);
-    setMessage("Guardando...");
+  useEffect(() => {
+    if (!isPanelOpen) {
+      return;
+    }
 
-    startTransition(async () => {
-      const result = await changeInvitationDesign({
-        eventId: event.id,
-        themeId: nextThemeId,
-        paletteId: nextPaletteId,
-      });
+    const previousOverflow = document.body.style.overflow;
+    const triggerElement = triggerRef.current;
+    document.body.style.overflow = "hidden";
 
-      setMessage(result.error ?? result.success ?? "Guardado");
-    });
+    const focusableSelector = [
+      "button:not([disabled])",
+      "a[href]",
+      "input:not([disabled])",
+      "select:not([disabled])",
+      "textarea:not([disabled])",
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(",");
+
+    const focusable = panelRef.current?.querySelectorAll<HTMLElement>(
+      focusableSelector,
+    );
+    focusable?.[0]?.focus();
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setIsPanelOpen(false);
+        return;
+      }
+
+      if (event.key !== "Tab" || !panelRef.current) {
+        return;
+      }
+
+      const elements = Array.from(
+        panelRef.current.querySelectorAll<HTMLElement>(focusableSelector),
+      ).filter((element) => element.offsetParent !== null);
+
+      if (!elements.length) {
+        return;
+      }
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleKeyDown);
+      triggerElement?.focus();
+    };
+  }, [isPanelOpen]);
+
+  function selectDesign(nextDesign: DesignSelection) {
+    setThemeId(nextDesign.themeId);
+    setPaletteId(nextDesign.paletteId);
+    desiredDesignRef.current = nextDesign;
+
+    if (!isSameDesign(nextDesign, savedDesignRef.current)) {
+      setSaveStatus(isSavingRef.current ? "pending" : "pending");
+      setMessage(isSavingRef.current ? "Cambio pendiente" : "Pendiente");
+    }
+
+    void flushDesignSave();
+  }
+
+  async function flushDesignSave() {
+    if (isSavingRef.current) {
+      return;
+    }
+
+    isSavingRef.current = true;
+
+    try {
+      while (!isSameDesign(desiredDesignRef.current, savedDesignRef.current)) {
+        const submittedDesign = desiredDesignRef.current;
+
+        setSaveStatus("saving");
+        setMessage("Guardando...");
+
+        const result = await changeInvitationDesign({
+          eventId: event.id,
+          paletteId: submittedDesign.paletteId,
+          themeId: submittedDesign.themeId,
+        });
+
+        if (!isSameDesign(submittedDesign, desiredDesignRef.current)) {
+          if (!result.error) {
+            savedDesignRef.current = submittedDesign;
+          }
+
+          continue;
+        }
+
+        if (result.error) {
+          setSaveStatus("error");
+          setMessage(result.error);
+          return;
+        }
+
+        savedDesignRef.current = submittedDesign;
+        setSaveStatus("saved");
+        setMessage(result.success ?? "Guardado");
+      }
+    } finally {
+      isSavingRef.current = false;
+    }
+
+    if (!isSameDesign(desiredDesignRef.current, savedDesignRef.current)) {
+      void flushDesignSave();
+    }
+  }
+
+  function retrySave() {
+    if (saveStatus === "error") {
+      setSaveStatus("pending");
+      setMessage("Reintentando...");
+      void flushDesignSave();
+    }
   }
 
   return (
     <div className="min-h-dvh bg-porcelain text-near-black">
-      <Link
-        className="fixed left-4 top-4 z-30 inline-flex min-h-10 items-center rounded-2xl border border-white/70 bg-white/90 px-4 text-sm font-semibold text-midnight-navy shadow-[0_16px_44px_rgba(16,42,67,0.12)] transition-colors hover:text-muted-mauve focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
-        href="/admin/personal"
-      >
-        Volver
-      </Link>
-
       <WeddingInvitation event={previewEvent} mode="preview" />
 
       <div
@@ -124,11 +247,12 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
                 aria-live="polite"
                 className="text-xs font-medium text-midnight-navy/52"
               >
-                {isPending ? "Guardando..." : message}
+                {saveStatus === "saving" ? "Guardando..." : message}
               </p>
             </div>
           </div>
           <button
+            ref={triggerRef}
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition-colors hover:bg-[#7D5F78] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
             onClick={() => setIsPanelOpen(true)}
             type="button"
@@ -141,17 +265,24 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
 
       {isPanelOpen ? (
         <div
+          aria-labelledby="design-panel-title"
           aria-modal="true"
           className="fixed inset-0 z-40 flex items-end bg-midnight-navy/38 px-3 pb-3 pt-12 sm:items-center sm:justify-center sm:p-6"
           role="dialog"
         >
-          <div className="max-h-[88dvh] w-full max-w-3xl overflow-y-auto rounded-t-[26px] border border-midnight-navy/10 bg-white p-5 shadow-[0_30px_100px_rgba(16,42,67,0.24)] sm:rounded-[26px] sm:p-7">
+          <div
+            ref={panelRef}
+            className="max-h-[88dvh] w-full max-w-3xl overflow-y-auto rounded-t-[26px] border border-midnight-navy/10 bg-white p-5 shadow-[0_30px_100px_rgba(16,42,67,0.24)] sm:rounded-[26px] sm:p-7"
+          >
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase text-muted-mauve">
                   Personalizacion
                 </p>
-                <h2 className="mt-2 font-serif text-[2.35rem] font-semibold leading-none text-midnight-navy">
+                <h2
+                  className="mt-2 font-serif text-[2.35rem] font-semibold leading-none text-midnight-navy"
+                  id="design-panel-title"
+                >
                   Cambiar diseno
                 </h2>
               </div>
@@ -172,27 +303,36 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {invitationThemes.map((theme) => (
                   <button
+                    aria-pressed={theme.id === themeId}
                     className={[
-                      "flex min-h-20 items-center justify-between rounded-[18px] border px-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve",
+                      "grid min-h-20 gap-3 rounded-[18px] border p-3 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve",
                       theme.id === themeId
                         ? "border-muted-mauve bg-muted-mauve/8 text-muted-mauve"
                         : "border-midnight-navy/10 bg-white text-midnight-navy hover:border-muted-mauve/25",
                     ].join(" ")}
                     key={theme.id}
-                    onClick={() => persistDesign(theme.id, paletteId)}
+                    onClick={() =>
+                      selectDesign({ paletteId, themeId: theme.id })
+                    }
                     type="button"
                   >
-                    <span>
-                      <span className="block text-sm font-semibold">
-                        {theme.name}
+                    <InvitationThemeThumbnail
+                      paletteId={paletteId}
+                      themeId={theme.id}
+                    />
+                    <span className="flex items-start justify-between gap-3">
+                      <span>
+                        <span className="block text-sm font-semibold">
+                          {theme.name}
+                        </span>
+                        <span className="mt-1 block text-xs leading-5 text-midnight-navy/52">
+                          {theme.description}
+                        </span>
                       </span>
-                      <span className="mt-1 block text-xs leading-5 text-midnight-navy/52">
-                        {theme.description}
-                      </span>
+                      {theme.id === themeId ? (
+                        <Check aria-hidden="true" className="mt-1 size-4" />
+                      ) : null}
                     </span>
-                    {theme.id === themeId ? (
-                      <Check aria-hidden="true" className="size-4" />
-                    ) : null}
                   </button>
                 ))}
               </div>
@@ -205,6 +345,7 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
               <div className="mt-3 grid gap-3 sm:grid-cols-2">
                 {invitationPalettes.map((palette) => (
                   <button
+                    aria-pressed={palette.id === paletteId}
                     className={[
                       "flex min-h-14 items-center justify-between rounded-[18px] border px-4 text-left transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve",
                       palette.id === paletteId
@@ -212,7 +353,9 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
                         : "border-midnight-navy/10 bg-white hover:border-muted-mauve/25",
                     ].join(" ")}
                     key={palette.id}
-                    onClick={() => persistDesign(themeId, palette.id)}
+                    onClick={() =>
+                      selectDesign({ paletteId: palette.id, themeId })
+                    }
                     type="button"
                   >
                     <span className="flex items-center gap-3">
@@ -238,9 +381,29 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
                 ))}
               </div>
             </section>
+
+            {saveStatus === "error" ? (
+              <div className="mt-6 flex flex-col gap-3 rounded-[18px] border border-[#8A3A3A]/20 bg-[#8A3A3A]/5 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-semibold text-[#8A3A3A]">
+                  {message}
+                </p>
+                <button
+                  className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-[#8A3A3A]/25 px-4 text-sm font-semibold text-[#8A3A3A] transition-colors hover:bg-[#8A3A3A]/8 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#8A3A3A]"
+                  onClick={retrySave}
+                  type="button"
+                >
+                  <RotateCcw aria-hidden="true" className="size-4" />
+                  Reintentar
+                </button>
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}
     </div>
   );
+}
+
+function isSameDesign(first: DesignSelection, second: DesignSelection) {
+  return first.themeId === second.themeId && first.paletteId === second.paletteId;
 }

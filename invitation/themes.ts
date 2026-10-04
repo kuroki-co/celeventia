@@ -149,6 +149,9 @@ export const invitationPalettes = [
 export type InvitationThemeId = (typeof invitationThemes)[number]["id"];
 export type InvitationPaletteId = (typeof invitationPalettes)[number]["id"];
 
+const defaultInvitationThemeId = "versalles" satisfies InvitationThemeId;
+const defaultInvitationPaletteId = "verde_esmeralda" satisfies InvitationPaletteId;
+
 export function isInvitationThemeId(value: string): value is InvitationThemeId {
   return invitationThemes.some((theme) => theme.id === value);
 }
@@ -161,13 +164,18 @@ export function isInvitationPaletteId(
 
 export function getInvitationTheme(id: string) {
   return (
-    invitationThemes.find((theme) => theme.id === id) ?? invitationThemes[0]
+    invitationThemes.find((theme) => theme.id === id) ??
+    invitationThemes.find((theme) => theme.id === defaultInvitationThemeId) ??
+    invitationThemes[0]
   );
 }
 
 export function getInvitationPalette(id: string) {
   return (
     invitationPalettes.find((palette) => palette.id === id) ??
+    invitationPalettes.find(
+      (palette) => palette.id === defaultInvitationPaletteId,
+    ) ??
     invitationPalettes[0]
   );
 }
