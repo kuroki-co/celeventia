@@ -259,6 +259,7 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-midnight-navy/10 bg-white px-4 text-sm font-semibold text-midnight-navy transition-colors hover:border-muted-mauve/30 hover:text-muted-mauve focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
+              id="entry-preview-trigger"
               onClick={() => setEntryPreviewKey((current) => current + 1)}
               type="button"
             >

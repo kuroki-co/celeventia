@@ -79,6 +79,7 @@ export function WeddingInvitation({
       : normalizeContent(event);
   const locations = getLocations(event, content, mode);
   const heroImage = content.heroImage;
+  const entryImage = resolveHeroImage(heroImage);
   const presentation = getThemePresentation(theme.frame);
   const usesCeremonialLayout = presentation.usesCeremonialLayout;
   const invitationBody = (
@@ -200,8 +201,9 @@ export function WeddingInvitation({
           coupleName={event.coupleName}
           dateLabel={event.dateLabel}
           frame={theme.frame}
-          key={`${theme.frame}-${entryPreviewKey}`}
+          image={entryImage}
           mode={mode}
+          previewKey={entryPreviewKey}
           recipient={recipient ?? null}
         >
           {invitationBody}
