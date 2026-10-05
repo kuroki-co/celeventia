@@ -8,24 +8,24 @@ type GiftCopyActionProps = {
 };
 
 export function GiftCopyAction({ label, value }: GiftCopyActionProps) {
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<"idle" | "copied" | "error">("idle");
 
   useEffect(() => {
-    if (!copied) {
+    if (status === "idle") {
       return;
     }
 
-    const timeout = window.setTimeout(() => setCopied(false), 1600);
+    const timeout = window.setTimeout(() => setStatus("idle"), 1800);
 
     return () => window.clearTimeout(timeout);
-  }, [copied]);
+  }, [status]);
 
   async function copyValue() {
     try {
       await navigator.clipboard.writeText(value);
-      setCopied(true);
+      setStatus("copied");
     } catch {
-      setCopied(false);
+      setStatus("error");
     }
   }
 
@@ -41,9 +41,18 @@ export function GiftCopyAction({ label, value }: GiftCopyActionProps) {
       </button>
       <span
         aria-live="polite"
-        className="min-h-4 text-xs font-medium leading-4 text-[color:var(--inv-secondary)]"
+        className={[
+          "min-h-4 text-xs font-medium leading-4",
+          status === "error"
+            ? "text-[#8A3A3A]"
+            : "text-[color:var(--inv-secondary)]",
+        ].join(" ")}
       >
-        {copied ? "Copiado" : ""}
+        {status === "copied"
+          ? "Copiado"
+          : status === "error"
+            ? "No se pudo copiar"
+            : ""}
       </span>
     </span>
   );

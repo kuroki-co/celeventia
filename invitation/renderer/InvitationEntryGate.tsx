@@ -41,7 +41,7 @@ type EntryOverlayProps = {
   frame: EntryFrame;
   image: EntryImage;
   mode: "preview" | "public";
-  onDismissPreview: () => void;
+  onDismissEntry: () => void;
   previewTrigger: number;
   recipient: EntryRecipient;
 };
@@ -66,12 +66,20 @@ export function InvitationEntryGate({
   recipient = null,
 }: InvitationEntryGateProps) {
   const [dismissedPreviewKey, setDismissedPreviewKey] = useState(0);
+  const [hasEnteredPublicInvitation, setHasEnteredPublicInvitation] =
+    useState(false);
   const contentRef = useRef<HTMLDivElement | null>(null);
   const isPreviewRequested = mode === "preview" && previewKey > dismissedPreviewKey;
-  const isVisible = mode === "public" || isPreviewRequested;
-  const dismissPreview = useCallback(() => {
-    setDismissedPreviewKey(previewKey);
-  }, [previewKey]);
+  const isVisible =
+    mode === "public" ? !hasEnteredPublicInvitation : isPreviewRequested;
+  const dismissEntry = useCallback(() => {
+    if (mode === "preview") {
+      setDismissedPreviewKey(previewKey);
+      return;
+    }
+
+    setHasEnteredPublicInvitation(true);
+  }, [mode, previewKey]);
 
   useEffect(() => {
     const contentElement = contentRef.current;
@@ -98,7 +106,7 @@ export function InvitationEntryGate({
           image={image}
           key={`${frame}-${previewKey}`}
           mode={mode}
-          onDismissPreview={dismissPreview}
+          onDismissEntry={dismissEntry}
           previewTrigger={previewKey}
           recipient={recipient}
         />
@@ -113,7 +121,7 @@ function EntryOverlay({
   frame,
   image,
   mode,
-  onDismissPreview,
+  onDismissEntry,
   previewTrigger,
   recipient,
 }: EntryOverlayProps) {
@@ -125,7 +133,6 @@ function EntryOverlay({
     [coupleName, dateLabel, recipient],
   );
   const initials = getEntryInitials(coupleName);
-  const isTerra = frame === "organic";
 
   const focusInvitation = useCallback(() => {
     window.setTimeout(() => {
@@ -137,11 +144,16 @@ function EntryOverlay({
   }, []);
 
   const closePreviewEntry = useCallback(() => {
-    onDismissPreview();
+    onDismissEntry();
     window.setTimeout(() => {
       document.getElementById("entry-preview-trigger")?.focus();
     }, 0);
-  }, [onDismissPreview]);
+  }, [onDismissEntry]);
+
+  const enterInvitation = useCallback(() => {
+    onDismissEntry();
+    focusInvitation();
+  }, [focusInvitation, onDismissEntry]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;
@@ -198,7 +210,7 @@ function EntryOverlay({
       return;
     }
 
-    if (isTerra && stage === "closed") {
+    if (stage === "closed") {
       setStage("card");
       return;
     }
@@ -226,11 +238,7 @@ function EntryOverlay({
   }
 
   function finishOpening() {
-    if (mode === "preview") {
-      onDismissPreview();
-    }
-
-    focusInvitation();
+    enterInvitation();
   }
 
   return (
@@ -244,12 +252,13 @@ function EntryOverlay({
       ref={overlayRef}
       role="dialog"
     >
-      <a
+      <button
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[70] focus:bg-[color:var(--inv-surface)] focus:px-4 focus:py-3 focus:text-sm focus:font-semibold focus:text-[color:var(--inv-primary)]"
-        href="#invitacion"
+        onClick={enterInvitation}
+        type="button"
       >
         Saltar a la invitacion
-      </a>
+      </button>
       {frame === "classic" ? (
         <ClassicEntry
           copy={copy}
@@ -257,6 +266,8 @@ function EntryOverlay({
           mode={mode}
           onClosePreview={closePreviewEntry}
           onOpen={beginOpening}
+          onReveal={revealInvitation}
+          stage={stage}
         />
       ) : null}
       {frame === "ornate" ? (
@@ -266,6 +277,8 @@ function EntryOverlay({
           mode={mode}
           onClosePreview={closePreviewEntry}
           onOpen={beginOpening}
+          onReveal={revealInvitation}
+          stage={stage}
         />
       ) : null}
       {frame === "organic" ? (
@@ -288,6 +301,8 @@ function EntryOverlay({
           mode={mode}
           onClosePreview={closePreviewEntry}
           onOpen={beginOpening}
+          onReveal={revealInvitation}
+          stage={stage}
         />
       ) : null}
       {frame === "minimal" ? (
@@ -297,6 +312,8 @@ function EntryOverlay({
           mode={mode}
           onClosePreview={closePreviewEntry}
           onOpen={beginOpening}
+          onReveal={revealInvitation}
+          stage={stage}
         />
       ) : null}
     </div>
@@ -309,63 +326,57 @@ function ClassicEntry({
   mode,
   onClosePreview,
   onOpen,
+  onReveal,
+  stage,
 }: {
   copy: EntryCopy;
   image: EntryImage;
   mode: "preview" | "public";
   onClosePreview: () => void;
   onOpen: () => void;
+  onReveal: () => void;
+  stage: "closed" | "card" | "opening";
 }) {
+  const isCardVisible = stage === "card";
+
   return (
-    <section className="relative grid min-h-dvh place-items-center overflow-hidden px-5 py-[max(1.5rem,env(safe-area-inset-top))] text-center text-white sm:px-8">
-      {image.src ? (
-        <img
-          alt=""
-          className="absolute inset-0 h-full w-full object-cover"
-          src={image.src}
-          style={{ objectPosition: image.objectPosition }}
-        />
-      ) : (
-        <div className="absolute inset-0 bg-[linear-gradient(145deg,color-mix(in_srgb,var(--inv-primary)_22%,var(--inv-bg)),var(--inv-bg)_54%,color-mix(in_srgb,var(--inv-accent)_18%,var(--inv-surface)))]" />
-      )}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.28),rgba(0,0,0,0.14)_38%,rgba(0,0,0,0.62))]" />
-      <div className="relative z-10 flex min-h-[calc(100dvh-5rem)] w-full max-w-2xl flex-col items-center justify-end pb-[max(4.5rem,env(safe-area-inset-bottom))] pt-10">
-        <p className="font-serif text-[2.8rem] font-normal leading-none text-[#FFF8EA] drop-shadow-[0_3px_14px_rgba(0,0,0,0.35)] sm:text-[4.2rem]">
+    <section className="relative grid min-h-dvh place-items-center overflow-hidden bg-[linear-gradient(180deg,color-mix(in_srgb,var(--inv-bg)_92%,var(--inv-surface)),color-mix(in_srgb,var(--inv-accent)_12%,var(--inv-bg)))] px-5 py-[max(1.5rem,env(safe-area-inset-top))] text-center sm:px-8">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,color-mix(in_srgb,var(--inv-surface)_70%,transparent),transparent_36%)]" />
+      <div className="relative z-10 flex min-h-[calc(100dvh-5rem)] w-full max-w-2xl flex-col items-center justify-center pt-8">
+        <p className="font-serif text-[2.55rem] font-normal leading-none text-[color:var(--inv-primary)] sm:text-[3.8rem]">
           Nuestra boda
         </p>
         <h2
-          className="mt-4 max-w-[40rem] text-balance font-serif text-[clamp(2.6rem,7vw,5.5rem)] font-normal leading-[0.92] text-[#FFF8EA] drop-shadow-[0_3px_16px_rgba(0,0,0,0.36)]"
+          className="mt-4 max-w-[40rem] text-balance font-serif text-[clamp(2.45rem,7vw,5rem)] font-normal leading-[0.92] text-[color:var(--inv-primary)]"
           id="invitation-entry-title"
         >
           {copy.title}
         </h2>
-        <p className="mt-4 max-w-md text-sm font-medium leading-7 text-[#FFF8EA]/84 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-base">
-          {copy.description}
-        </p>
-        <div className="mt-7 h-px w-20 bg-[#FFF8EA]/52" />
-        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-[#FFF8EA]/82">
+        <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--inv-secondary)]">
           {copy.foot}
         </p>
-        <div className="mt-7 w-full max-w-xs overflow-hidden border border-[#FFF8EA]/46 bg-white/10 p-2 shadow-[0_22px_70px_rgba(0,0,0,0.22)]">
-          {image.src ? (
-            <img
-              alt=""
-              className="aspect-[4/3] w-full object-cover"
-              src={image.src}
-              style={{ objectPosition: image.objectPosition }}
-            />
-          ) : (
-            <div className="grid aspect-[4/3] place-items-center bg-[#FFF8EA]/18 font-serif text-4xl">
-              {copy.headline}
-            </div>
-          )}
+        <div className="relative mt-8 w-full max-w-[34rem]">
+          <PaperLetter
+            copy={copy}
+            image={image}
+            isVisible={isCardVisible}
+            variant="classic"
+          />
+          <button
+            aria-label={isCardVisible ? "Sobre abierto" : "Abrir sobre"}
+            className="relative z-20 mx-auto block aspect-[1.62] w-full max-w-[32rem] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--inv-secondary)]"
+            disabled={isCardVisible}
+            onClick={onOpen}
+            type="button"
+          >
+            <SimpleEnvelope initials={copy.headline} isOpen={isCardVisible} />
+          </button>
         </div>
         <EntryActions
           mode={mode}
           onClosePreview={onClosePreview}
-          onOpen={onOpen}
-          primaryLabel="Abrir invitacion"
-          tone="light"
+          onOpen={isCardVisible ? onReveal : onOpen}
+          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
         />
       </div>
     </section>
@@ -378,13 +389,19 @@ function VersallesEntry({
   mode,
   onClosePreview,
   onOpen,
+  onReveal,
+  stage,
 }: {
   copy: EntryCopy;
   initials: string;
   mode: "preview" | "public";
   onClosePreview: () => void;
   onOpen: () => void;
+  onReveal: () => void;
+  stage: "closed" | "card" | "opening";
 }) {
+  const isCardVisible = stage === "card";
+
   return (
     <section className="relative grid min-h-dvh place-items-center overflow-hidden bg-[linear-gradient(180deg,color-mix(in_srgb,var(--inv-bg)_90%,var(--inv-surface)),color-mix(in_srgb,var(--inv-primary)_10%,var(--inv-bg)))] px-5 py-[max(1.5rem,env(safe-area-inset-top))] text-center text-[color:var(--inv-text)] sm:px-8">
       <VersallesBotanicalCorners />
@@ -408,20 +425,26 @@ function VersallesEntry({
           aria-hidden="true"
           className="relative mt-7 aspect-[818/501] w-full max-w-[34rem]"
         >
+          <PaperLetter
+            copy={copy}
+            image={{ objectPosition: "center center", src: null }}
+            isVisible={isCardVisible}
+            variant="ornate"
+          />
           <img
             alt=""
-            className="h-full w-full object-contain drop-shadow-[0_28px_70px_rgba(16,42,67,0.18)]"
+            className="relative z-20 h-full w-full object-contain drop-shadow-[0_28px_70px_rgba(16,42,67,0.18)]"
             src="/wedding-themes/shared/envelopes/ivory-envelope-with-gold-seal.png"
           />
-          <span className="absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 font-serif text-[clamp(2rem,8vw,4.8rem)] font-normal text-[color:var(--inv-primary)]">
+          <span className="absolute left-1/2 top-[42%] z-30 -translate-x-1/2 -translate-y-1/2 font-serif text-[clamp(2rem,8vw,4.8rem)] font-normal text-[color:var(--inv-primary)]">
             {initials}
           </span>
         </div>
         <EntryActions
           mode={mode}
           onClosePreview={onClosePreview}
-          onOpen={onOpen}
-          primaryLabel="Abrir invitacion"
+          onOpen={isCardVisible ? onReveal : onOpen}
+          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
         />
       </div>
     </section>
@@ -533,22 +556,25 @@ function TraditionalEntry({
   mode,
   onClosePreview,
   onOpen,
+  onReveal,
+  stage,
 }: {
   copy: EntryCopy;
   initials: string;
   mode: "preview" | "public";
   onClosePreview: () => void;
   onOpen: () => void;
+  onReveal: () => void;
+  stage: "closed" | "card" | "opening";
 }) {
+  const isCardVisible = stage === "card";
+
   return (
     <section className="relative grid min-h-dvh place-items-center overflow-hidden bg-[radial-gradient(circle_at_50%_0%,color-mix(in_srgb,var(--inv-accent)_18%,transparent),transparent_34%),linear-gradient(180deg,var(--inv-bg),color-mix(in_srgb,var(--inv-primary)_9%,var(--inv-bg)))] px-5 py-[max(1.5rem,env(safe-area-inset-top))] text-center">
       <div className="absolute inset-6 border border-[color:var(--inv-border)]/60 sm:inset-10" />
       <CeremonialEntryCorners />
       <div className="relative z-10 w-full max-w-xl px-5 py-10">
-        <div className="mx-auto grid size-24 place-items-center rounded-full border border-[color:var(--inv-accent)]/70 bg-[color:var(--inv-surface)]/72 text-[color:var(--inv-primary)] shadow-[0_18px_46px_rgba(16,42,67,0.12)]">
-          <span className="font-serif text-4xl">{initials}</span>
-        </div>
-        <p className="mt-7 text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--inv-secondary)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[color:var(--inv-secondary)]">
           Nuestra boda
         </p>
         <h2
@@ -563,11 +589,28 @@ function TraditionalEntry({
         <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-secondary)]">
           {copy.foot}
         </p>
+        <div className="relative mx-auto mt-8 w-full max-w-[31rem]">
+          <PaperLetter
+            copy={copy}
+            image={{ objectPosition: "center center", src: null }}
+            isVisible={isCardVisible}
+            variant="traditional"
+          />
+          <button
+            aria-label={isCardVisible ? "Sobre abierto" : "Abrir sobre"}
+            className="relative z-20 mx-auto block aspect-[1.58] w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--inv-secondary)]"
+            disabled={isCardVisible}
+            onClick={onOpen}
+            type="button"
+          >
+            <SimpleEnvelope initials={initials} isOpen={isCardVisible} />
+          </button>
+        </div>
         <EntryActions
           mode={mode}
           onClosePreview={onClosePreview}
-          onOpen={onOpen}
-          primaryLabel="Abrir invitacion"
+          onOpen={isCardVisible ? onReveal : onOpen}
+          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
         />
       </div>
     </section>
@@ -580,22 +623,25 @@ function MinimalEntry({
   mode,
   onClosePreview,
   onOpen,
+  onReveal,
+  stage,
 }: {
   copy: EntryCopy;
   initials: string;
   mode: "preview" | "public";
   onClosePreview: () => void;
   onOpen: () => void;
+  onReveal: () => void;
+  stage: "closed" | "card" | "opening";
 }) {
+  const isCardVisible = stage === "card";
+
   return (
     <section className="relative grid min-h-dvh place-items-center overflow-hidden bg-[color:var(--inv-bg)] px-5 py-[max(1.5rem,env(safe-area-inset-top))] text-center sm:px-8">
       <div className="absolute inset-x-8 top-10 h-px bg-[color:var(--inv-border)]/70" />
       <div className="absolute inset-x-8 bottom-10 h-px bg-[color:var(--inv-border)]/70" />
       <div className="relative z-10 w-full max-w-lg">
-        <p className="mx-auto grid size-20 place-items-center border border-[color:var(--inv-border)] text-[color:var(--inv-primary)]">
-          <span className="font-serif text-3xl">{initials}</span>
-        </p>
-        <p className="mt-8 text-xs font-semibold uppercase tracking-[0.34em] text-[color:var(--inv-secondary)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.34em] text-[color:var(--inv-secondary)]">
           Nuestra boda
         </p>
         <h2
@@ -610,14 +656,117 @@ function MinimalEntry({
         <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-secondary)]">
           {copy.foot}
         </p>
+        <div className="relative mx-auto mt-8 w-full max-w-[30rem]">
+          <PaperLetter
+            copy={copy}
+            image={{ objectPosition: "center center", src: null }}
+            isVisible={isCardVisible}
+            variant="minimal"
+          />
+          <button
+            aria-label={isCardVisible ? "Sobre abierto" : "Abrir sobre"}
+            className="relative z-20 mx-auto block aspect-[1.72] w-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--inv-secondary)]"
+            disabled={isCardVisible}
+            onClick={onOpen}
+            type="button"
+          >
+            <SimpleEnvelope initials={initials} isOpen={isCardVisible} minimal />
+          </button>
+        </div>
         <EntryActions
           mode={mode}
           onClosePreview={onClosePreview}
-          onOpen={onOpen}
-          primaryLabel="Abrir invitacion"
+          onOpen={isCardVisible ? onReveal : onOpen}
+          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
         />
       </div>
     </section>
+  );
+}
+
+function PaperLetter({
+  copy,
+  image,
+  isVisible,
+  variant,
+}: {
+  copy: EntryCopy;
+  image: EntryImage;
+  isVisible: boolean;
+  variant: "classic" | "minimal" | "ornate" | "traditional";
+}) {
+  const hasPhoto = variant === "classic" && image.src;
+
+  return (
+    <div
+      aria-hidden={!isVisible}
+      className={[
+        "absolute left-1/2 z-10 w-[76%] max-w-[22rem] -translate-x-1/2 border bg-[color:var(--inv-surface)] text-center shadow-[0_18px_44px_rgba(16,42,67,0.16)] transition-all duration-500 motion-reduce:transition-none",
+        variant === "minimal"
+          ? "border-[color:var(--inv-border)]/60 px-5 py-6"
+          : "border-[color:var(--inv-border)]/70 px-5 py-6 outline outline-1 outline-offset-[-10px] outline-[color:var(--inv-border)]/28",
+        variant === "ornate"
+          ? "top-[-18%]"
+          : variant === "traditional"
+            ? "top-[-16%]"
+            : "top-[-20%]",
+        isVisible ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0",
+      ].join(" ")}
+    >
+      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-secondary)]">
+        {copy.detail}
+      </p>
+      <p className="mt-2 text-balance font-serif text-[2rem] font-normal leading-none text-[color:var(--inv-primary)]">
+        {copy.headline}
+      </p>
+      {hasPhoto ? (
+        <img
+          alt=""
+          className="mx-auto mt-4 aspect-[5/4] w-full max-w-[12rem] object-cover"
+          src={image.src ?? ""}
+          style={{ objectPosition: image.objectPosition }}
+        />
+      ) : null}
+      <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--inv-muted)]">
+        {copy.foot}
+      </p>
+    </div>
+  );
+}
+
+function SimpleEnvelope({
+  initials,
+  isOpen,
+  minimal = false,
+}: {
+  initials: string;
+  isOpen: boolean;
+  minimal?: boolean;
+}) {
+  return (
+    <div className="absolute inset-0 drop-shadow-[0_24px_60px_rgba(16,42,67,0.16)]">
+      <div
+        className={[
+          "absolute inset-x-[5%] bottom-[8%] top-[22%] overflow-hidden border bg-[color:var(--inv-surface)]",
+          minimal
+            ? "border-[color:var(--inv-border)]/70"
+            : "border-[color:var(--inv-border)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--inv-surface)_94%,var(--inv-bg)),color-mix(in_srgb,var(--inv-accent)_12%,var(--inv-surface)))]",
+        ].join(" ")}
+      >
+        <div className="absolute inset-0 bg-[linear-gradient(145deg,transparent_49%,color-mix(in_srgb,var(--inv-primary)_10%,var(--inv-surface))_50%),linear-gradient(215deg,transparent_49%,color-mix(in_srgb,var(--inv-accent)_18%,var(--inv-surface))_50%)]" />
+      </div>
+      <div
+        className={[
+          "absolute inset-x-[5%] top-[10%] z-10 h-[48%] origin-top border border-[color:var(--inv-border)]/70 bg-[linear-gradient(180deg,color-mix(in_srgb,var(--inv-accent)_16%,var(--inv-surface)),var(--inv-surface))] transition-transform duration-500 [clip-path:polygon(0_0,100%_0,50%_100%)] motion-reduce:transition-none",
+          isOpen ? "[transform:rotateX(-48deg)_scaleY(0.78)] opacity-90" : "",
+        ].join(" ")}
+      />
+      <div className="absolute left-1/2 top-[57%] z-20 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[color:var(--inv-accent)]/70 bg-[color:var(--inv-surface)] text-[color:var(--inv-primary)] shadow-[0_12px_30px_rgba(16,42,67,0.14)]">
+        <span className="font-serif text-2xl">
+          {getEntryInitials(initials)}
+        </span>
+      </div>
+    </div>
   );
 }
 

@@ -1173,9 +1173,26 @@ function GiftsSection({
             <h3 className="font-serif text-3xl font-semibold text-[color:var(--inv-primary)]">
               {gift.title}
             </h3>
-            <p className="mt-3 text-sm leading-7 text-[color:var(--inv-muted)]">
-              {gift.description}
-            </p>
+            <GiftMethodDetails gift={gift} />
+            <div className="mt-5 flex min-h-10 flex-col items-center justify-start gap-2">
+              {getGiftCopyActions(gift).map((action) => (
+                <GiftCopyAction
+                  key={action.label}
+                  label={action.label}
+                  value={action.value}
+                />
+              ))}
+              {gift.kind === "externalRegistry" && gift.url ? (
+                <a
+                  className="inline-flex min-h-10 items-center justify-center text-sm font-semibold text-[color:var(--inv-primary)] underline decoration-[color:var(--inv-border)] underline-offset-4 transition-colors hover:text-[color:var(--inv-secondary)] hover:decoration-[color:var(--inv-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[color:var(--inv-secondary)]"
+                  href={gift.url}
+                  rel="noreferrer"
+                  target="_blank"
+                >
+                  {gift.linkLabel ?? "Ver lista de regalos"} →
+                </a>
+              ) : null}
+            </div>
           </div>
         ))}
       </div>
