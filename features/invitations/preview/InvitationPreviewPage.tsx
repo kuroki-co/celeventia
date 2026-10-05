@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Palette, RotateCcw, X } from "lucide-react";
+import { Check, MailOpen, Palette, RotateCcw, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { InvitationThemeThumbnail } from "@/invitation/renderer/InvitationThemeThumbnail";
@@ -34,6 +34,7 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
   );
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const [entryPreviewKey, setEntryPreviewKey] = useState(0);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [message, setMessage] = useState("Guardado");
   const lastScrollYRef = useRef(0);
@@ -214,7 +215,11 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
 
   return (
     <div className="min-h-dvh bg-porcelain text-near-black">
-      <WeddingInvitation event={previewEvent} mode="preview" />
+      <WeddingInvitation
+        entryPreviewKey={entryPreviewKey}
+        event={previewEvent}
+        mode="preview"
+      />
 
       <div
         className={[
@@ -251,15 +256,25 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
               </p>
             </div>
           </div>
-          <button
-            ref={triggerRef}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition-colors hover:bg-[#7D5F78] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
-            onClick={() => setIsPanelOpen(true)}
-            type="button"
-          >
-            <Palette aria-hidden="true" className="size-4" />
-            Cambiar
-          </button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <button
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-midnight-navy/10 bg-white px-4 text-sm font-semibold text-midnight-navy transition-colors hover:border-muted-mauve/30 hover:text-muted-mauve focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
+              onClick={() => setEntryPreviewKey((current) => current + 1)}
+              type="button"
+            >
+              <MailOpen aria-hidden="true" className="size-4" />
+              Ver entrada
+            </button>
+            <button
+              ref={triggerRef}
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition-colors hover:bg-[#7D5F78] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
+              onClick={() => setIsPanelOpen(true)}
+              type="button"
+            >
+              <Palette aria-hidden="true" className="size-4" />
+              Cambiar
+            </button>
+          </div>
         </div>
       </div>
 

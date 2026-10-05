@@ -11,6 +11,7 @@ import type { CSSProperties, ReactNode } from "react";
 import { previewWeddingDemoContent } from "../demoData";
 import { invitationFontClassName } from "../invitation-fonts";
 import { GiftCopyAction } from "./GiftCopyAction";
+import { InvitationEntryGate } from "./InvitationEntryGate";
 import { InvitationGallery } from "./InvitationGallery";
 import {
   getInvitationPalette,
@@ -34,6 +35,7 @@ type WeddingInvitationProps = {
     maxGuests: number;
   } | null;
   children?: ReactNode;
+  entryPreviewKey?: number;
 };
 
 type ThemePresentation = {
@@ -62,6 +64,7 @@ type ThemePresentation = {
 };
 
 export function WeddingInvitation({
+  entryPreviewKey = 0,
   event,
   mode,
   recipient,
@@ -78,42 +81,8 @@ export function WeddingInvitation({
   const heroImage = content.heroImage;
   const presentation = getThemePresentation(theme.frame);
   const usesCeremonialLayout = presentation.usesCeremonialLayout;
-
-  return (
-    <article
-      className={[
-        "min-h-dvh overflow-hidden",
-        invitationFontClassName,
-        presentation.backgroundClassName,
-      ].join(" ")}
-      data-theme-frame={theme.frame}
-      style={
-        {
-          "--inv-bg": colors.background,
-          "--inv-surface": colors.surface,
-          "--inv-primary": colors.primary,
-          "--inv-secondary": colors.secondary,
-          "--inv-accent": colors.accent,
-          "--inv-text": colors.text,
-          "--inv-muted": colors.muted,
-          "--inv-border": colors.border,
-          "--font-manrope": "var(--inv-font-sans)",
-          "--font-cormorant": "var(--inv-font-serif)",
-          background: colors.background,
-          color: colors.text,
-        } as CSSProperties
-      }
-    >
-      {recipient ? (
-        <EnvelopeIntro
-          dateLabel={event.dateLabel}
-          isTraditional={usesCeremonialLayout}
-          presentation={presentation}
-          recipient={recipient}
-          title={event.coupleName}
-        />
-      ) : null}
-
+  const invitationBody = (
+    <>
       <InvitationHero
         dateLabel={event.dateLabel}
         image={heroImage}
@@ -197,170 +166,51 @@ export function WeddingInvitation({
           title={event.coupleName}
         />
       </div>
+    </>
+  );
+  const shouldShowEntry = mode === "public" || entryPreviewKey > 0;
+
+  return (
+    <article
+      className={[
+        "min-h-dvh overflow-hidden",
+        invitationFontClassName,
+        presentation.backgroundClassName,
+      ].join(" ")}
+      data-theme-frame={theme.frame}
+      style={
+        {
+          "--inv-bg": colors.background,
+          "--inv-surface": colors.surface,
+          "--inv-primary": colors.primary,
+          "--inv-secondary": colors.secondary,
+          "--inv-accent": colors.accent,
+          "--inv-text": colors.text,
+          "--inv-muted": colors.muted,
+          "--inv-border": colors.border,
+          "--font-manrope": "var(--inv-font-sans)",
+          "--font-cormorant": "var(--inv-font-serif)",
+          background: colors.background,
+          color: colors.text,
+        } as CSSProperties
+      }
+    >
+      {shouldShowEntry ? (
+        <InvitationEntryGate
+          coupleName={event.coupleName}
+          dateLabel={event.dateLabel}
+          frame={theme.frame}
+          key={`${theme.frame}-${entryPreviewKey}`}
+          mode={mode}
+          recipient={recipient ?? null}
+        >
+          {invitationBody}
+        </InvitationEntryGate>
+      ) : (
+        invitationBody
+      )}
     </article>
   );
-}
-
-function EnvelopeIntro({
-  dateLabel,
-  isTraditional,
-  presentation,
-  recipient,
-  title,
-}: {
-  dateLabel: string;
-  isTraditional: boolean;
-  presentation: ThemePresentation;
-  recipient: NonNullable<WeddingInvitationProps["recipient"]>;
-  title: string;
-}) {
-  if (presentation.assetKey === "terra") {
-    return (
-      <TerraEnvelopeIntro
-        dateLabel={dateLabel}
-        recipient={recipient}
-        title={title}
-      />
-    );
-  }
-
-  return (
-    <section className="grid min-h-dvh place-items-center px-5 py-10 text-center">
-      <div
-        className={[
-          "relative w-full max-w-xl border border-[color:var(--inv-border)] bg-[color:var(--inv-surface)] px-6 py-10 sm:px-10 sm:py-14",
-          isTraditional
-            ? presentation.envelopeCardClassName
-            : "shadow-[0_28px_100px_rgba(16,42,67,0.10)]",
-        ].join(" ")}
-      >
-        {presentation.showFloralCorners ? (
-          <FloralCorner position="top-left" />
-        ) : null}
-        {presentation.showFloralCorners ? (
-          <FloralCorner position="bottom-right" />
-        ) : null}
-        <p
-          className={[
-            "text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--inv-secondary)]",
-            isTraditional ? "font-serif normal-case tracking-[0.08em]" : "",
-          ].join(" ")}
-        >
-          Te invitamos a
-        </p>
-        <h1
-          className={[
-            "mt-5 font-serif text-[3.4rem] font-semibold leading-none text-[color:var(--inv-primary)] sm:text-[4.4rem]",
-            isTraditional ? "font-normal" : "",
-          ].join(" ")}
-        >
-          Nuestra Boda
-        </h1>
-        <p className="mt-8 text-sm font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-muted)]">
-          Invitacion para
-        </p>
-        <h2 className="mt-3 font-serif text-4xl font-semibold leading-tight text-[color:var(--inv-text)]">
-          {recipient.displayName}
-        </h2>
-        <p className="mx-auto mt-5 max-w-sm text-sm leading-6 text-[color:var(--inv-muted)]">
-          Con mucho carino hemos reservado para ustedes
-        </p>
-        <p className="mt-4 text-2xl font-semibold text-[color:var(--inv-primary)]">
-          {recipient.maxGuests} {recipient.maxGuests === 1 ? "pase" : "pases"}
-        </p>
-        <p className="mt-5 text-sm font-semibold uppercase tracking-[0.2em] text-[color:var(--inv-secondary)]">
-          {formatShortDate(dateLabel)}
-        </p>
-        <a
-          className="mt-8 inline-flex min-h-11 items-center justify-center border border-[color:var(--inv-accent)] px-5 text-sm font-semibold text-[color:var(--inv-primary)] transition-colors hover:bg-[color:var(--inv-bg)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
-          href="#invitacion"
-        >
-          Abrir invitacion
-        </a>
-        <p className="mt-6 text-xs uppercase tracking-[0.18em] text-[color:var(--inv-muted)]">
-          {title}
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function TerraEnvelopeIntro({
-  dateLabel,
-  recipient,
-  title,
-}: {
-  dateLabel: string;
-  recipient: NonNullable<WeddingInvitationProps["recipient"]>;
-  title: string;
-}) {
-  return (
-    <section className="relative grid min-h-dvh place-items-center overflow-hidden px-5 py-10 text-center">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_15%,color-mix(in_srgb,var(--inv-accent)_20%,transparent),transparent_28%),radial-gradient(circle_at_80%_78%,color-mix(in_srgb,var(--inv-primary)_16%,transparent),transparent_28%)]" />
-      <div className="relative w-full max-w-xl">
-        <div className="relative mx-auto aspect-[1.18] w-full max-w-[31rem] drop-shadow-[0_34px_80px_rgba(16,42,67,0.18)]">
-          <div className="absolute inset-x-[5%] bottom-[9%] top-[18%] overflow-hidden border border-[color:var(--inv-border)]/70 bg-[color:var(--inv-surface)]">
-            <div className="absolute inset-x-0 bottom-0 h-[58%] bg-[linear-gradient(143deg,transparent_49%,color-mix(in_srgb,var(--inv-primary)_20%,var(--inv-surface))_50%),linear-gradient(217deg,transparent_49%,color-mix(in_srgb,var(--inv-accent)_26%,var(--inv-surface))_50%)]" />
-            <div className="absolute inset-x-0 top-0 h-[54%] origin-top bg-[linear-gradient(180deg,color-mix(in_srgb,var(--inv-primary)_26%,var(--inv-surface)),var(--inv-surface))] [clip-path:polygon(0_0,100%_0,50%_100%)]" />
-          </div>
-          <Image
-            alt=""
-            className="absolute -right-3 -top-1 h-24 w-20 rotate-12 object-contain opacity-80 sm:h-28 sm:w-24"
-            height={150}
-            priority={false}
-            src="/wedding-themes/shared/ornaments/gold-floral-scroll.png"
-            width={96}
-          />
-          <Image
-            alt=""
-            className="absolute -left-2 bottom-10 h-20 w-20 -rotate-12 object-contain opacity-70 mix-blend-multiply"
-            height={235}
-            priority={false}
-            src="/wedding-themes/shared/ornaments/pastel-rose-bouquet.png"
-            width={256}
-          />
-          <div className="absolute left-1/2 top-[42%] z-10 flex size-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[color:var(--inv-accent)]/65 bg-[color:var(--inv-surface)] text-[color:var(--inv-primary)] shadow-[0_12px_34px_rgba(16,42,67,0.16)]">
-            <span className="font-serif text-3xl font-normal">
-              {getInitials(title)}
-            </span>
-          </div>
-        </div>
-        <div className="relative mx-auto -mt-10 max-w-md border border-[color:var(--inv-border)]/70 bg-[color:var(--inv-surface)]/92 px-6 py-7 shadow-[0_24px_60px_rgba(16,42,67,0.12)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-secondary)]">
-            Invitacion para
-          </p>
-          <h1 className="mt-3 font-serif text-[2.7rem] font-normal leading-none text-[color:var(--inv-primary)]">
-            {recipient.displayName}
-          </h1>
-          <p className="mt-4 text-sm font-semibold text-[color:var(--inv-muted)]">
-            {dateLabel}
-          </p>
-          <a
-            className="mt-6 inline-flex min-h-11 items-center justify-center border border-[color:var(--inv-accent)] bg-[color:var(--inv-primary)] px-5 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--inv-primary)]/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
-            href="#invitacion"
-          >
-            Abrir invitacion
-          </a>
-          <p className="mt-5 text-xs uppercase tracking-[0.18em] text-[color:var(--inv-muted)]">
-            {title}
-          </p>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function getInitials(title: string) {
-  const parts = title
-    .split("&")
-    .map((part) => part.trim())
-    .filter(Boolean);
-
-  if (parts.length >= 2) {
-    return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
-  }
-
-  return title.slice(0, 2).toUpperCase();
 }
 
 function InvitationHero({
@@ -2489,56 +2339,3 @@ function CeremonialFloralCorner({
   );
 }
 
-function FloralCorner({
-  position,
-}: {
-  position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
-}) {
-  const corner = {
-    "top-left": {
-      className: "left-3 top-3",
-      src: "/images/ornamento-superior-izquierdo.png",
-    },
-    "top-right": {
-      className: "right-3 top-3",
-      src: "/images/ornamento-superior-derecho.png",
-    },
-    "bottom-left": {
-      className: "bottom-3 left-3",
-      src: "/images/ornamento-inferior-izquierdo.png",
-    },
-    "bottom-right": {
-      className: "bottom-3 right-3",
-      src: "/images/ornamento-inferior-derecho.png",
-    },
-  }[position];
-
-  return (
-    <div
-      aria-hidden="true"
-      className={[
-        "pointer-events-none absolute hidden h-24 w-24 opacity-25 mix-blend-multiply sm:block",
-        corner.className,
-      ].join(" ")}
-    >
-      <Image
-        alt=""
-        className="h-full w-full object-contain"
-        height={240}
-        sizes="96px"
-        src={corner.src}
-        width={240}
-      />
-    </div>
-  );
-}
-
-function formatShortDate(value: string) {
-  const digits = value.match(/\d+/g);
-
-  if (digits && digits.length >= 3) {
-    return digits.slice(0, 3).join(".");
-  }
-
-  return value;
-}
