@@ -23,6 +23,9 @@ Storage:
   - `events/{event_id}/invitation/`
   - `events/{event_id}/gallery/`
   - `events/{event_id}/story/`
-- Draft uploads store object metadata in `invitation_media`. Signed URLs are not stored as permanent source URLs.
+- Draft uploads store object metadata in `invitation_media` and persistent media references in `events.invitation_content` using `bucket`, `objectPath` and media `id`.
+- Signed URLs are generated only at render time for dashboard preview/public invitations and are not stored as permanent source URLs.
+- Published media is marked with `invitation_media.is_published = true` when publication writes `published_snapshot`, so removing or replacing draft photos does not break the public version.
+- `202610050003_public_published_event_media_access.sql` adds a Storage select policy for `anon` limited to objects referenced by a published snapshot.
 
 The migration `202610050001_event_onboarding_invitation_content.sql` removes demo defaults for future event creation, adds structured wedding fields, adds invitation content/snapshot columns, creates media metadata and installs event-scoped Storage policies.

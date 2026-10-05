@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { DashboardSidebar } from "@/features/dashboard/main/DashboardSidebar";
 import { MobileDashboardNav } from "@/features/dashboard/main/MobileDashboardNav";
 import { getPersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
+import { resolveInvitationMediaUrls } from "@/features/media/media-content";
 import { createClient } from "@/shared/supabase/server";
 
 import { InvitationContentEditor } from "./InvitationContentEditor";
@@ -29,6 +30,11 @@ export async function InvitationEditorPage({
     redirect("/admin/personal/onboarding");
   }
 
+  const renderEvent = {
+    ...event,
+    content: await resolveInvitationMediaUrls(supabase, event.content),
+  };
+
   return (
     <div className="min-h-dvh bg-porcelain text-near-black lg:flex">
       <DashboardSidebar coupleName={event.coupleName} dateLabel={event.dateLabel} />
@@ -51,7 +57,7 @@ export async function InvitationEditorPage({
             </p>
           </section>
           <InvitationContentEditor
-            event={event}
+            event={renderEvent}
             initialSection={initialSection}
           />
         </main>

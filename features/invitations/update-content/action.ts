@@ -18,6 +18,7 @@ import {
 
 export type UpdateContentState = {
   error?: string;
+  fieldErrors?: Record<string, string>;
   formKey?: string;
   success?: string;
   values?: Record<string, boolean | string | undefined>;
@@ -42,6 +43,7 @@ export async function updateWeddingDetails(
   if (!parsed.success) {
     return {
       error: parsed.error.issues[0]?.message ?? "Revisa los datos.",
+      fieldErrors: getFieldErrors(parsed.error),
       formKey: createFormKey(),
       values,
     };
@@ -112,6 +114,7 @@ export async function updateLocations(
   if (!parsed.success) {
     return {
       error: parsed.error.issues[0]?.message ?? "Revisa los lugares.",
+      fieldErrors: getFieldErrors(parsed.error),
       formKey: createFormKey(),
       values,
     };
@@ -208,6 +211,7 @@ export async function updateSimpleContent(
   if (!parsed.success) {
     return {
       error: parsed.error.issues[0]?.message ?? "Revisa el contenido.",
+      fieldErrors: getFieldErrors(parsed.error),
       formKey: createFormKey(),
       values,
     };
@@ -224,27 +228,52 @@ export async function updateSimpleContent(
     };
   }
 
-  const content: WeddingInvitationContent = {
-    ...event.content,
-    closingMessage: parsed.data.closingMessage || null,
-    dressCode: parsed.data.dressCodeStyle
-      ? {
-          style: parsed.data.dressCodeStyle,
-          women: parsed.data.dressCodeRecommendations,
-        }
-      : null,
-    gifts: parsed.data.giftMessage
-      ? [
-          {
-            description: parsed.data.giftMessage,
-            enabled: true,
-            kind: "envelope",
-            title: "Regalos",
-          },
-        ]
-      : [],
-    tagline: parsed.data.tagline || null,
-  };
+  const content: WeddingInvitationContent = { ...event.content };
+
+  if (Object.hasOwn(values, "tagline")) {
+    content.tagline = parsed.data.tagline || null;
+  }
+
+  if (
+    Object.hasOwn(values, "dressCodeStyle") ||
+    Object.hasOwn(values, "dressCodeRecommendations")
+  ) {
+    content.dressCode =
+      parsed.data.dressCodeStyle || parsed.data.dressCodeRecommendations
+        ? {
+            ...event.content.dressCode,
+            style:
+              parsed.data.dressCodeStyle ??
+              event.content.dressCode?.style,
+            general:
+              parsed.data.dressCodeRecommendations ??
+              event.content.dressCode?.general,
+          }
+        : null;
+  }
+
+  if (Object.hasOwn(values, "giftMessage")) {
+    const existingGifts = event.content.gifts ?? [];
+    const envelopeGift = {
+      description: parsed.data.giftMessage ?? "",
+      enabled: Boolean(parsed.data.giftMessage),
+      kind: "envelope" as const,
+      title: "Regalos",
+    };
+    const hasEnvelope = existingGifts.some((gift) => gift.kind === "envelope");
+
+    content.gifts = hasEnvelope
+      ? existingGifts.map((gift) =>
+          gift.kind === "envelope" ? { ...gift, ...envelopeGift } : gift,
+        )
+      : parsed.data.giftMessage
+        ? [...existingGifts, envelopeGift]
+        : existingGifts;
+  }
+
+  if (Object.hasOwn(values, "closingMessage")) {
+    content.closingMessage = parsed.data.closingMessage || null;
+  }
 
   const { error } = await supabase
     .from("events")
@@ -312,6 +341,20 @@ function getStringValue(formData: FormData, key: string) {
   const value = formData.get(key);
 
   return typeof value === "string" ? value : undefined;
+}
+
+function getFieldErrors(error: {
+  issues: Array<{ message: string; path: Array<PropertyKey> }>;
+}) {
+  return error.issues.reduce<Record<string, string>>((errors, issue) => {
+    const [field] = issue.path;
+
+    if (typeof field === "string" && !errors[field]) {
+      errors[field] = issue.message;
+    }
+
+    return errors;
+  }, {});
 }
 
 function hasLocationContent(location: {

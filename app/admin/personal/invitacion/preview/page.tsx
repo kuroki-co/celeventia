@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { InvitationPreviewPage } from "@/features/invitations/preview/InvitationPreviewPage";
 import { getPersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
+import { resolveInvitationMediaUrls } from "@/features/media/media-content";
 import { createClient } from "@/shared/supabase/server";
 
 export const metadata: Metadata = {
@@ -26,5 +27,12 @@ export default async function AdminInvitationPreviewPage() {
     redirect("/admin/personal/onboarding");
   }
 
-  return <InvitationPreviewPage event={event} />;
+  return (
+    <InvitationPreviewPage
+      event={{
+        ...event,
+        content: await resolveInvitationMediaUrls(supabase, event.content),
+      }}
+    />
+  );
 }

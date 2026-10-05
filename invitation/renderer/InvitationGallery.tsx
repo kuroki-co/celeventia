@@ -272,8 +272,12 @@ export function InvitationGallery({
 function normalizeGalleryImages(images: GalleryImage[]) {
   return images
     .slice(0, maxGalleryImages)
-    .map((image, index): NormalizedGalleryImage => {
+    .map((image, index): NormalizedGalleryImage | null => {
       if (typeof image === "string") {
+        if (!image) {
+          return null;
+        }
+
         return {
           alt: `Foto de la sesión ${index + 1}`,
           featured: index < maxFeaturedImages,
@@ -283,14 +287,19 @@ function normalizeGalleryImages(images: GalleryImage[]) {
         };
       }
 
+      if (!image.url) {
+        return null;
+      }
+
       return {
         alt: image.alt ?? `Foto de la sesión ${index + 1}`,
         featured: image.featured ?? index < maxFeaturedImages,
-        id: image.id ?? image.url,
+        id: image.id ?? image.objectPath ?? image.url,
         order: image.order ?? index,
         url: image.url,
       };
     })
+    .filter((image): image is NormalizedGalleryImage => Boolean(image))
     .sort((first, second) => first.order - second.order);
 }
 

@@ -8,6 +8,8 @@ Dashboard preview and public invitations both render through `WeddingInvitation`
 
 Preview no longer merges demo family, story, gifts, places or photos into real invitations. Optional sections render only when the saved content contains data for them.
 
+Invitation photos are stored as event-owned Supabase Storage objects. Draft content keeps stable references (`bucket`, `objectPath`, media `id`, order and focal point); render data resolves those references to short-lived URLs before passing them to `WeddingInvitation`. The renderer never needs to know Storage credentials, and published snapshots remain stable until the user explicitly republishes.
+
 Publication lifecycle:
 
 1. Onboarding creates a draft event.

@@ -1,5 +1,6 @@
 import type { createClient } from "@/shared/supabase/server";
 import type { WeddingInvitationContent } from "@/invitation/renderer/types";
+import { resolveInvitationMediaUrls } from "@/features/media/media-content";
 
 import type { PublicInvitationData } from "./types";
 
@@ -69,6 +70,11 @@ export async function getPublicInvitation(
     return null;
   }
 
+  const content = await resolveInvitationMediaUrls(
+    supabase,
+    parseInvitationContent(row.invitation_content),
+  );
+
   return {
     event: {
       slug: row.event_slug,
@@ -79,7 +85,7 @@ export async function getPublicInvitation(
       mainLocationName: row.main_location_name,
       mainLocationTime: row.main_location_time,
       mainInvitationMessage: row.main_invitation_message,
-      ...parseInvitationContent(row.invitation_content),
+      ...content,
     },
     recipient: {
       displayName: row.display_name,
@@ -112,6 +118,11 @@ async function getPublicEvent(
     return null;
   }
 
+  const content = await resolveInvitationMediaUrls(
+    supabase,
+    parseInvitationContent(row.invitation_content),
+  );
+
   return {
     event: {
       slug: row.event_slug,
@@ -122,7 +133,7 @@ async function getPublicEvent(
       mainLocationName: row.main_location_name,
       mainLocationTime: row.main_location_time,
       mainInvitationMessage: row.main_invitation_message,
-      ...parseInvitationContent(row.invitation_content),
+      ...content,
     },
     recipient: null,
     rsvp: null,

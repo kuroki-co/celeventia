@@ -32,6 +32,7 @@ export type WeddingInvitationContent = {
   itinerary?: InvitationTimelineItem[];
   dressCode?: {
     style?: string;
+    general?: string;
     men?: string;
     women?: string;
     children?: string;
@@ -51,16 +52,21 @@ export type WeddingInvitationContent = {
 };
 
 export type HeroImage = {
-  url: string;
+  bucket?: string;
   focalX?: number;
   focalY?: number;
+  id?: string;
+  objectPath?: string;
+  url?: string;
 };
 
 export type GalleryImage =
   | string
   | {
       id?: string;
-      url: string;
+      bucket?: string;
+      objectPath?: string;
+      url?: string;
       alt?: string;
       featured?: boolean;
       order?: number;

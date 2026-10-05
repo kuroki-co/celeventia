@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getRequiredPersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
+import { stripTransientMediaUrls } from "@/features/media/media-content";
 import { createClient } from "@/shared/supabase/server";
 
 const schema = z.object({
@@ -35,11 +36,35 @@ export async function deleteInvitationImage(mediaId: string) {
     return { error: "No pudimos encontrar la imagen." };
   }
 
+  const nextContent = {
+    ...event.content,
+    galleryImages: event.content.galleryImages?.filter((image) =>
+      typeof image === "string" ? true : image.id !== data.id,
+    ),
+    heroImage:
+      typeof event.content.heroImage === "object" &&
+      event.content.heroImage?.id === data.id
+        ? null
+        : event.content.heroImage,
+  };
+
+  const { error: updateError } = await supabase
+    .from("events")
+    .update({
+      draft_revision: event.draftRevision + 1,
+      invitation_content: stripTransientMediaUrls(nextContent),
+    })
+    .eq("id", event.id);
+
+  if (updateError) {
+    return { error: "No pudimos quitar la imagen del borrador." };
+  }
+
   if (data.is_published) {
-    return {
-      error:
-        "La imagen pertenece a una version publicada. Reemplazala en el borrador antes de eliminarla.",
-    };
+    revalidatePath("/admin/personal/invitacion/fotografias");
+    revalidatePath("/admin/personal/invitacion/preview");
+
+    return { success: "Imagen quitada del borrador." };
   }
 
   const { error: deleteError } = await supabase

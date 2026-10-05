@@ -303,7 +303,7 @@ function resolveHeroImage(image?: WeddingInvitationContent["heroImage"]) {
 
   return {
     objectPosition: `${focalX}% ${focalY}%`,
-    src: image.url,
+    src: image.url ?? null,
   };
 }
 
@@ -820,6 +820,7 @@ function DressCodeSection({
   }
 
   const entries = [
+    ["Recomendaciones", content.general],
     ["Ellos", content.men],
     ["Ellas", content.women],
     ["Niños", content.children],

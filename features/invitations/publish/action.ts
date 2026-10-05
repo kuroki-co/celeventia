@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 
 import { createClient } from "@/shared/supabase/server";
+import {
+  collectMediaReferences,
+  stripTransientMediaUrls,
+} from "@/features/media/media-content";
 import { evaluatePublicationReadiness } from "../evaluate-readiness/evaluatePublicationReadiness";
 import { getRequiredPersonalInvitationEvent } from "../get-personal-invitation/data";
 
@@ -28,8 +32,9 @@ export async function publishInvitation(): Promise<PublishInvitationState> {
     return { error: "La invitacion todavia tiene requisitos pendientes." };
   }
 
+  const content = stripTransientMediaUrls(event.content);
   const snapshot = {
-    content: event.content,
+    content,
     coupleName: event.coupleName,
     dateLabel: event.dateLabel,
     mainInvitationMessage: event.mainInvitationMessage,
@@ -52,6 +57,16 @@ export async function publishInvitation(): Promise<PublishInvitationState> {
 
   if (error) {
     return { error: "No pudimos publicar la invitacion." };
+  }
+
+  const mediaIds = collectMediaReferences(content).map((media) => media.id);
+
+  if (mediaIds.length) {
+    await supabase
+      .from("invitation_media")
+      .update({ is_published: true })
+      .eq("event_id", event.id)
+      .in("id", mediaIds);
   }
 
   revalidatePath("/admin/personal/invitacion/publicar");

@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import type { ReactNode } from "react";
 
 import type { PersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
+import { InvitationPhotosEditor } from "@/features/media/manage-draft-images/InvitationPhotosEditor";
 
 import {
   updateLocations,
@@ -264,12 +265,7 @@ export function InvitationContentEditor({
         setOpenSection={setOpenSection}
         title="Fotos"
       >
-        <div className="rounded-[18px] border border-midnight-navy/10 bg-white px-4 py-4 text-sm leading-6 text-midnight-navy/65">
-          Las subidas usan Supabase Storage por evento. En este corte quedan
-          preparadas las rutas y metadatos; las fotografias cargadas se
-          reflejaran en portada y galeria sin reemplazar la version publicada
-          hasta actualizarla.
-        </div>
+        <InvitationPhotosEditor event={event} />
       </EditorSection>
     </div>
   );

@@ -1,9 +1,8 @@
 import { z } from "zod";
 
+export { allowedImageTypes, maxImageSizeBytes } from "./limits";
+
 export const uploadImageSchema = z.object({
   eventId: z.string().uuid(),
   purpose: z.enum(["invitation", "gallery", "story"]),
 });
-
-export const allowedImageTypes = ["image/jpeg", "image/png", "image/webp"];
-export const maxImageSizeBytes = 5 * 1024 * 1024;
