@@ -50,6 +50,7 @@ type ThemePresentation = {
   heroMessageClassName: string;
   heroOverlayClassName: string;
   heroRuleClassName: string;
+  heroSectionClassName: string;
   heroTitleClassName: string;
   heroWashClassName: string;
   imageClassName: string;
@@ -116,12 +117,10 @@ export function WeddingInvitation({
       <InvitationHero
         dateLabel={event.dateLabel}
         image={heroImage}
-        isTraditional={usesCeremonialLayout}
         message={event.mainInvitationMessage}
         presentation={presentation}
         title={event.coupleName}
         tagline={content.tagline}
-        themeFrame={theme.frame}
       />
 
       <div
@@ -367,74 +366,23 @@ function getInitials(title: string) {
 function InvitationHero({
   dateLabel,
   image,
-  isTraditional,
   message,
   presentation,
   tagline,
-  themeFrame,
   title,
 }: {
   dateLabel: string;
   image?: WeddingInvitationContent["heroImage"];
-  isTraditional: boolean;
   message?: string | null;
   presentation: ThemePresentation;
   tagline?: string | null;
-  themeFrame: string;
   title: string;
 }) {
   const heroImage = resolveHeroImage(image);
 
-  if (isTraditional) {
-    return (
-      <section
-        className="relative grid min-h-[100svh] place-items-center overflow-hidden px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))] text-center lg:min-h-screen sm:px-8"
-        id="invitacion"
-      >
-        {heroImage.src ? (
-          <img
-            alt=""
-            className="absolute inset-0 h-full w-full object-cover"
-            src={heroImage.src}
-            style={{ objectPosition: heroImage.objectPosition }}
-          />
-        ) : (
-          <div className="absolute inset-0 bg-[color:var(--inv-primary)]" />
-        )}
-        <div className={presentation.heroOverlayClassName} />
-        <div className={presentation.heroWashClassName} />
-
-        <div className={presentation.heroContentClassName}>
-          <ThemeHeroDecorations presentation={presentation} />
-          <p className={presentation.heroKickerClassName}>
-            Nos casamos
-          </p>
-          <h1 className={presentation.heroTitleClassName}>
-            <HeroTitle title={title} />
-          </h1>
-          <div
-            aria-hidden="true"
-            className={presentation.heroRuleClassName}
-          />
-          <p className={presentation.heroDateClassName}>
-            {dateLabel}
-          </p>
-          {tagline || message ? (
-            <p className={presentation.heroMessageClassName}>
-              {tagline ?? message}
-            </p>
-          ) : null}
-        </div>
-      </section>
-    );
-  }
-
   return (
     <section
-      className={[
-        "relative grid min-h-dvh overflow-hidden px-5 py-8 sm:px-8 lg:px-12",
-        themeFrame === "organic" ? "place-items-center" : "place-items-end",
-      ].join(" ")}
+      className={presentation.heroSectionClassName}
       id="invitacion"
     >
       {heroImage.src ? (
@@ -445,32 +393,27 @@ function InvitationHero({
           style={{ objectPosition: heroImage.objectPosition }}
         />
       ) : (
-        <div className="absolute inset-0 bg-[color:var(--inv-surface)]" />
+        <div className="absolute inset-0 bg-[color:var(--inv-primary)]" />
       )}
-      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(17,17,17,0.08),rgba(17,17,17,0.68))]" />
-      <div
-        className={[
-          "relative mx-auto w-full border border-white/35 bg-white/90 px-5 py-8 text-center shadow-[0_28px_100px_rgba(16,42,67,0.16)] sm:px-10 sm:py-12",
-          themeFrame === "organic"
-            ? "max-w-3xl rounded-t-[52px] outline outline-1 outline-offset-[-14px] outline-[color:var(--inv-border)]/45 lg:mb-0"
-            : "max-w-5xl lg:mb-8",
-          themeFrame === "minimal" || themeFrame === "classic"
-            ? "rounded-none"
-            : "rounded-[28px]",
-        ].join(" ")}
-      >
-        <ThemeHeroDecorations presentation={presentation} />
-        <p className="text-xs font-semibold uppercase tracking-[0.32em] text-[color:var(--inv-secondary)]">
+      <div className={presentation.heroOverlayClassName} />
+      <div className={presentation.heroWashClassName} />
+      <ThemeHeroDecorations presentation={presentation} />
+      <div className={presentation.heroContentClassName}>
+        <p className={presentation.heroKickerClassName}>
           Nos casamos
         </p>
-        <h1 className="mx-auto mt-5 max-w-4xl font-serif text-[4rem] font-semibold leading-[0.88] text-[color:var(--inv-primary)] sm:text-[6rem] lg:text-[7.5rem]">
-          {title}
+        <h1 className={presentation.heroTitleClassName}>
+          <HeroTitle title={title} />
         </h1>
-        <p className="mt-6 text-base font-semibold text-[color:var(--inv-muted)] sm:text-lg">
+        <div
+          aria-hidden="true"
+          className={presentation.heroRuleClassName}
+        />
+        <p className={presentation.heroDateClassName}>
           {dateLabel}
         </p>
         {tagline || message ? (
-          <p className="mx-auto mt-6 max-w-2xl text-base leading-8 text-[color:var(--inv-text)] sm:text-lg">
+          <p className={presentation.heroMessageClassName}>
             {tagline ?? message}
           </p>
         ) : null}
@@ -2081,16 +2024,18 @@ function getThemePresentation(frame: string): ThemePresentation {
     familyInsetClassName:
       "absolute inset-4 border border-[color:var(--inv-border)]/35 sm:inset-5",
     heroContentClassName:
-      "relative mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[56rem] flex-col items-center justify-center text-white",
+      "relative z-10 mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[56rem] flex-col items-center justify-center text-white",
     heroDateClassName:
-      "mt-11 font-serif text-[1.05rem] font-normal text-[#FFF8EA]/90 drop-shadow-[0_2px_10px_rgba(0,0,0,0.22)] sm:text-xl",
+      "mt-9 font-sans text-[0.92rem] font-semibold uppercase tracking-[0.22em] text-[#FFF8EA]/88 drop-shadow-[0_2px_10px_rgba(0,0,0,0.24)] sm:text-[1rem]",
     heroKickerClassName:
-      "text-[0.66rem] font-normal uppercase tracking-[0.42em] text-[#FFF8EA]/84 sm:text-[0.72rem]",
+      "text-[0.66rem] font-semibold uppercase tracking-[0.42em] text-[#FFF8EA]/84 drop-shadow-[0_2px_10px_rgba(0,0,0,0.22)] sm:text-[0.72rem]",
     heroMessageClassName:
       "mx-auto mt-4 max-w-[34rem] font-serif text-[0.98rem] font-normal italic leading-7 text-[#FFF8EA]/80 drop-shadow-[0_2px_10px_rgba(0,0,0,0.2)] sm:text-[1.08rem] sm:leading-8",
     heroOverlayClassName:
       "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.34),rgba(0,0,0,0.13)_56%,rgba(0,0,0,0.2)_100%)]",
     heroRuleClassName: "mt-8 h-px w-16 bg-[#FFF8EA]/46 sm:w-20",
+    heroSectionClassName:
+      "relative grid min-h-[100svh] place-items-center overflow-hidden px-5 pb-[max(2.5rem,env(safe-area-inset-bottom))] pt-[max(2.5rem,env(safe-area-inset-top))] text-center lg:min-h-screen sm:px-8",
     heroTitleClassName:
       "mx-auto mt-8 max-w-[52rem] text-balance font-serif text-[clamp(3.35rem,8vw,6.35rem)] font-normal leading-[0.92] text-[#FFF8EA] drop-shadow-[0_3px_14px_rgba(0,0,0,0.24)] sm:leading-[0.94]",
     heroWashClassName:
@@ -2120,6 +2065,8 @@ function getThemePresentation(frame: string): ThemePresentation {
       heroTitleClassName:
         "mx-auto mt-8 max-w-[54rem] text-balance font-serif text-[clamp(3.65rem,8.4vw,6.85rem)] font-normal leading-[0.9] text-[#FFF8EA] drop-shadow-[0_3px_14px_rgba(0,0,0,0.24)] sm:leading-[0.92]",
       heroRuleClassName: "mt-9 h-px w-28 bg-[#FFF8EA]/58 sm:w-36",
+      heroWashClassName:
+        "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18),transparent_25%,transparent_64%,rgba(0,0,0,0.35))]",
       imageClassName: "p-2 shadow-[0_26px_70px_rgba(16,42,67,0.10)]",
       locationDetailsClassName:
         "mx-auto border-x border-b border-[color:var(--inv-accent)]/55 bg-[linear-gradient(180deg,rgba(255,255,255,0.72),rgba(255,255,255,0.36))] px-5 py-8 shadow-[0_18px_60px_rgba(16,42,67,0.08)] sm:px-10 sm:py-9",
@@ -2138,9 +2085,21 @@ function getThemePresentation(frame: string): ThemePresentation {
       familyPanelClassName:
         "relative mx-auto max-w-[720px] overflow-hidden border border-[color:var(--inv-border)]/70 bg-[color:var(--inv-surface)] px-6 py-12 text-center shadow-none outline outline-1 outline-offset-[-12px] outline-[color:var(--inv-border)]/30 sm:px-12 sm:py-14 lg:px-16 lg:py-16",
       familyPatternClassName: "absolute inset-0 opacity-0",
+      heroContentClassName:
+        "relative z-10 mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[46rem] flex-col items-center justify-end pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-16 text-center text-white sm:pb-20",
+      heroDateClassName:
+        "mt-6 font-sans text-[0.8rem] font-semibold uppercase tracking-[0.24em] text-[#FFF8EA]/82 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-[0.92rem]",
+      heroKickerClassName:
+        "font-sans text-[0.64rem] font-semibold uppercase tracking-[0.34em] text-[#FFF8EA]/76 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.7rem]",
+      heroMessageClassName:
+        "mx-auto mt-4 max-w-[34rem] font-sans text-sm font-medium leading-7 text-[#FFF8EA]/78 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.96rem]",
       heroOverlayClassName:
-        "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.24),rgba(0,0,0,0.18)_55%,rgba(0,0,0,0.36))]",
-      heroRuleClassName: "mt-8 h-px w-24 bg-[#FFF8EA]/52",
+        "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.06)_0%,rgba(0,0,0,0.12)_44%,rgba(0,0,0,0.68)_100%)]",
+      heroRuleClassName: "mt-6 h-px w-20 bg-[#FFF8EA]/50 sm:w-28",
+      heroTitleClassName:
+        "mx-auto mt-5 max-w-[42rem] text-balance font-serif text-[clamp(2.75rem,6.2vw,4.85rem)] font-normal leading-[0.94] text-[#FFF8EA] drop-shadow-[0_3px_16px_rgba(0,0,0,0.34)]",
+      heroWashClassName:
+        "absolute inset-x-0 bottom-0 h-[52%] bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.34)_58%,rgba(0,0,0,0.18))]",
       imageClassName: "grayscale-[12%]",
       locationDetailsClassName:
         "mx-auto border-x border-b border-[color:var(--inv-border)]/65 bg-[color:var(--inv-surface)]/45 px-5 py-7 sm:px-10 sm:py-8",
@@ -2163,11 +2122,21 @@ function getThemePresentation(frame: string): ThemePresentation {
         "relative mx-auto max-w-[780px] overflow-hidden rounded-t-[56px] border border-[color:var(--inv-border)]/60 bg-[linear-gradient(180deg,rgba(255,253,248,0.94),rgba(250,247,238,0.9)),radial-gradient(circle_at_16%_0%,color-mix(in_srgb,var(--inv-primary)_10%,transparent),transparent_30%),radial-gradient(circle_at_82%_105%,color-mix(in_srgb,var(--inv-accent)_16%,transparent),transparent_34%)] px-6 py-12 text-center shadow-[0_28px_80px_rgba(16,42,67,0.09)] sm:px-12 sm:py-14 lg:px-16 lg:py-16",
       familyInsetClassName:
         "absolute inset-4 rounded-t-[44px] border border-[color:var(--inv-border)]/28 sm:inset-5",
-      heroOverlayClassName:
-        "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(44,33,29,0.31),rgba(44,33,29,0.12)_58%,rgba(44,33,29,0.24)_100%)]",
       heroContentClassName:
-        "relative mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[50rem] flex-col items-center justify-center text-white",
-      heroRuleClassName: "mt-8 h-px w-20 bg-[#FFF8EA]/44 sm:w-28",
+        "relative z-10 mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[44rem] flex-col items-center justify-end pb-[max(6rem,env(safe-area-inset-bottom))] pt-16 text-center text-white sm:pb-24",
+      heroDateClassName:
+        "mt-6 font-sans text-[0.8rem] font-semibold uppercase tracking-[0.24em] text-[#FFF8EA]/82 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.92rem]",
+      heroKickerClassName:
+        "font-sans text-[0.64rem] font-semibold uppercase tracking-[0.34em] text-[#FFF8EA]/76 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.7rem]",
+      heroMessageClassName:
+        "mx-auto mt-4 max-w-[31rem] font-sans text-sm font-medium leading-7 text-[#FFF8EA]/78 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.96rem]",
+      heroOverlayClassName:
+        "absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(44,33,29,0.08),transparent_34%),linear-gradient(180deg,rgba(26,23,18,0.04)_0%,rgba(38,31,26,0.1)_42%,rgba(38,31,26,0.68)_100%)]",
+      heroRuleClassName: "mt-6 h-px w-16 bg-[#FFF8EA]/42 sm:w-24",
+      heroTitleClassName:
+        "mx-auto mt-5 max-w-[40rem] text-balance font-serif text-[clamp(2.8rem,6.4vw,5rem)] font-normal leading-[0.94] text-[#FFF8EA] drop-shadow-[0_3px_16px_rgba(0,0,0,0.34)]",
+      heroWashClassName:
+        "absolute inset-x-0 bottom-0 h-[55%] bg-[linear-gradient(180deg,transparent,rgba(37,30,24,0.32)_58%,rgba(37,30,24,0.16))]",
       imageClassName: "rounded-t-[32px]",
       locationDetailsClassName:
         "mx-auto rounded-b-[32px] border-x border-b border-[color:var(--inv-border)]/55 bg-[color:var(--inv-surface)]/35 px-5 py-7 sm:px-10 sm:py-8",
@@ -2190,12 +2159,20 @@ function getThemePresentation(frame: string): ThemePresentation {
       familyPatternClassName: "absolute inset-0 opacity-0",
       familyInsetClassName: "absolute inset-0 border-0",
       heroContentClassName:
-        "relative mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[48rem] flex-col items-center justify-center text-white",
+        "relative z-10 mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[64rem] flex-col items-center justify-end pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-16 text-center text-white sm:items-start sm:pb-20 sm:text-left",
+      heroDateClassName:
+        "mt-6 font-sans text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-[#FFF8EA]/78 drop-shadow-[0_2px_10px_rgba(0,0,0,0.26)] sm:text-[0.9rem]",
+      heroKickerClassName:
+        "font-sans text-[0.62rem] font-semibold uppercase tracking-[0.34em] text-[#FFF8EA]/72 drop-shadow-[0_2px_10px_rgba(0,0,0,0.24)] sm:text-[0.68rem]",
+      heroMessageClassName:
+        "mt-4 max-w-[31rem] font-sans text-sm font-medium leading-7 text-[#FFF8EA]/72 drop-shadow-[0_2px_10px_rgba(0,0,0,0.24)] sm:text-[0.96rem]",
       heroOverlayClassName:
-        "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18),rgba(0,0,0,0.16)_55%,rgba(0,0,0,0.38))]",
-      heroRuleClassName: "mt-8 h-px w-12 bg-[#FFF8EA]/42",
+        "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.04)_0%,rgba(0,0,0,0.1)_48%,rgba(0,0,0,0.6)_100%)]",
+      heroRuleClassName: "mt-6 h-px w-12 bg-[#FFF8EA]/38",
       heroTitleClassName:
-        "mx-auto mt-8 max-w-[46rem] text-balance font-serif text-[clamp(3rem,7vw,5.75rem)] font-normal leading-[0.96] text-[#FFF8EA] drop-shadow-[0_2px_12px_rgba(0,0,0,0.2)]",
+        "mt-5 max-w-[38rem] text-balance font-serif text-[clamp(2.7rem,5.8vw,4.65rem)] font-normal leading-[0.98] text-[#FFF8EA] drop-shadow-[0_3px_14px_rgba(0,0,0,0.28)]",
+      heroWashClassName:
+        "absolute inset-x-0 bottom-0 h-[50%] bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.28)_62%,rgba(0,0,0,0.12))]",
       imageClassName: "p-0",
       locationDetailsClassName:
         "mx-auto border-b border-[color:var(--inv-border)]/55 px-4 py-7 sm:px-8 sm:py-8",
@@ -2215,10 +2192,18 @@ function ThemeHeroDecorations({
   if (presentation.assetKey === "versalles") {
     return (
       <>
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-5 z-[1] border border-[#FFF8EA]/42 sm:inset-8"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-8 z-[1] hidden border border-[#FFF8EA]/20 sm:block"
+        />
         <Image
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute -top-6 left-1/2 z-0 h-24 w-36 -translate-x-1/2 object-contain opacity-85 sm:h-32 sm:w-48"
+          className="pointer-events-none absolute left-3 top-3 z-[2] h-24 w-32 object-contain opacity-82 sm:left-6 sm:top-6 sm:h-32 sm:w-44"
           height={187}
           priority={false}
           src="/wedding-themes/versalles/ornaments/pastel-floral-corner-top.png"
@@ -2227,7 +2212,16 @@ function ThemeHeroDecorations({
         <Image
           alt=""
           aria-hidden="true"
-          className="pointer-events-none absolute -bottom-8 right-2 z-0 hidden h-28 w-36 object-contain opacity-80 sm:block"
+          className="pointer-events-none absolute right-3 top-3 z-[2] h-24 w-32 -scale-x-100 object-contain opacity-76 sm:right-6 sm:top-6 sm:h-32 sm:w-44"
+          height={187}
+          priority={false}
+          src="/wedding-themes/versalles/ornaments/pastel-floral-corner-top.png"
+          width={256}
+        />
+        <Image
+          alt=""
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-2 right-3 z-[2] hidden h-28 w-36 object-contain opacity-72 sm:right-6 sm:block"
           height={235}
           priority={false}
           src="/wedding-themes/versalles/ornaments/pastel-floral-corner-bottom.png"
@@ -2239,27 +2233,64 @@ function ThemeHeroDecorations({
 
   if (presentation.assetKey === "terra") {
     return (
-      <Image
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute right-4 top-4 z-0 h-28 w-20 rotate-12 object-contain opacity-55 sm:right-8 sm:top-8 sm:h-36 sm:w-24"
-        height={150}
-        priority={false}
-        src="/wedding-themes/shared/ornaments/gold-floral-scroll.png"
-        width={96}
-      />
+      <>
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-20 right-3 z-[1] h-40 w-28 text-[#FFF8EA]/36 sm:bottom-24 sm:right-8 sm:h-52 sm:w-36"
+          fill="none"
+          viewBox="0 0 120 170"
+        >
+          <path
+            d="M22 154c31-33 38-72 42-132"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.4"
+          />
+          <path
+            d="M55 62c18-6 29-18 36-36-18 4-31 16-36 36Z"
+            fill="currentColor"
+            opacity="0.42"
+          />
+          <path
+            d="M45 98c20-4 35-14 45-31-20 1-35 11-45 31Z"
+            fill="currentColor"
+            opacity="0.34"
+          />
+          <path
+            d="M35 128c-17-7-27-20-32-39 17 5 29 19 32 39Z"
+            fill="currentColor"
+            opacity="0.32"
+          />
+        </svg>
+        <svg
+          aria-hidden="true"
+          className="pointer-events-none absolute bottom-24 left-2 z-[1] h-32 w-24 -scale-x-100 text-[#FFF8EA]/24 sm:bottom-28 sm:left-8 sm:h-44 sm:w-32"
+          fill="none"
+          viewBox="0 0 120 170"
+        >
+          <path
+            d="M22 154c31-33 38-72 42-132"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeWidth="1.4"
+          />
+          <path
+            d="M55 62c18-6 29-18 36-36-18 4-31 16-36 36Z"
+            fill="currentColor"
+            opacity="0.4"
+          />
+          <path
+            d="M45 98c20-4 35-14 45-31-20 1-35 11-45 31Z"
+            fill="currentColor"
+            opacity="0.32"
+          />
+        </svg>
+      </>
     );
   }
 
   if (presentation.assetKey === "classic") {
-    return (
-      <img
-        alt=""
-        aria-hidden="true"
-        className="pointer-events-none absolute left-1/2 top-8 z-0 h-4 w-40 -translate-x-1/2 opacity-70"
-        src="/wedding-themes/classic/ornaments/line-divider-top.svg"
-      />
-    );
+    return null;
   }
 
   return null;
