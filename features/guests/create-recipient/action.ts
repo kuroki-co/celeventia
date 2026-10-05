@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 
 import { createClient } from "@/shared/supabase/server";
 
-import { ensurePersonalEventId } from "../list-recipients/data";
+import { getRequiredPersonalEventId } from "../list-recipients/data";
 import { normalizePhone } from "./phone";
 import { createRecipientSchema } from "./schema";
 
@@ -39,7 +39,7 @@ export async function createRecipient(
     redirect("/admin/login");
   }
 
-  const eventId = await ensurePersonalEventId(supabase);
+  const eventId = await getRequiredPersonalEventId(supabase);
   const normalizedPhone = normalizePhone(parsed.data.phone ?? "");
 
   const { error } = await supabase.from("invitation_recipients").insert({

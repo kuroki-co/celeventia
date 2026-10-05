@@ -38,9 +38,20 @@ export async function changeInvitationDesign(
     return { error: "Necesitas iniciar sesion." };
   }
 
+  const { data: currentEvent, error: currentEventError } = await supabase
+    .from("events")
+    .select("id, draft_revision")
+    .eq("id", parsed.data.eventId)
+    .maybeSingle<{ id: string; draft_revision: number | null }>();
+
+  if (currentEventError || !currentEvent) {
+    return { error: "No pudimos confirmar el evento autorizado." };
+  }
+
   const { data, error } = await supabase
     .from("events")
     .update({
+      draft_revision: (currentEvent.draft_revision ?? 1) + 1,
       theme_id: parsed.data.themeId,
       palette_id: parsed.data.paletteId,
     })
@@ -58,9 +69,6 @@ export async function changeInvitationDesign(
 
   revalidatePath("/admin/personal/invitacion/preview");
   revalidatePath("/admin/personal/invitacion/publicar");
-  if (data.slug) {
-    revalidatePath(`/i/${data.slug}`);
-  }
 
   return { success: "Diseno guardado." };
 }

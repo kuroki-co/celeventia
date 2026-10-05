@@ -257,7 +257,7 @@ function EntryOverlay({
         onClick={enterInvitation}
         type="button"
       >
-        Saltar a la invitacion
+        Saltar a la invitación
       </button>
       {frame === "classic" ? (
         <ClassicEntry
@@ -355,7 +355,7 @@ function ClassicEntry({
         <p className="mt-4 text-xs font-semibold uppercase tracking-[0.24em] text-[color:var(--inv-secondary)]">
           {copy.foot}
         </p>
-        <div className="relative mt-8 w-full max-w-[34rem]">
+        <div className="relative mt-14 w-full max-w-[34rem] sm:mt-16">
           <PaperLetter
             copy={copy}
             image={image}
@@ -376,7 +376,7 @@ function ClassicEntry({
           mode={mode}
           onClosePreview={onClosePreview}
           onOpen={isCardVisible ? onReveal : onOpen}
-          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
+          primaryLabel={isCardVisible ? "Ver invitación" : "Abrir sobre"}
         />
       </div>
     </section>
@@ -421,10 +421,7 @@ function VersallesEntry({
         <p className="mt-4 text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-secondary)]">
           {copy.foot}
         </p>
-        <div
-          aria-hidden="true"
-          className="relative mt-7 aspect-[818/501] w-full max-w-[34rem]"
-        >
+        <div className="relative mt-14 aspect-[818/501] w-full max-w-[34rem] sm:mt-16">
           <PaperLetter
             copy={copy}
             image={{ objectPosition: "center center", src: null }}
@@ -444,7 +441,7 @@ function VersallesEntry({
           mode={mode}
           onClosePreview={onClosePreview}
           onOpen={isCardVisible ? onReveal : onOpen}
-          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
+          primaryLabel={isCardVisible ? "Ver invitación" : "Abrir sobre"}
         />
       </div>
     </section>
@@ -501,7 +498,7 @@ function TerraEntry({
             onClick={onOpen}
             type="button"
           >
-            <TerraEnvelope initials={initials} isOpen={isCardVisible} />
+            <TerraEnvelope isOpen={isCardVisible} />
           </button>
           <div
             className={[
@@ -527,7 +524,7 @@ function TerraEntry({
             </div>
             <div className="rotate-[1.5deg] border border-[color:var(--inv-border)]/70 bg-[color:var(--inv-surface)] px-4 py-5 text-center shadow-[0_16px_34px_rgba(44,33,29,0.14)]">
               <p className="text-[0.62rem] font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-secondary)]">
-                Invitacion
+                Invitación
               </p>
               <p className="mt-2 text-balance font-serif text-3xl font-normal leading-none text-[color:var(--inv-primary)]">
                 {copy.headline}
@@ -542,7 +539,7 @@ function TerraEntry({
           mode={mode}
           onClosePreview={onClosePreview}
           onOpen={isCardVisible ? onReveal : onOpen}
-          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
+          primaryLabel={isCardVisible ? "Ver invitación" : "Abrir sobre"}
           seed={previewTrigger}
         />
       </div>
@@ -589,7 +586,7 @@ function TraditionalEntry({
         <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-secondary)]">
           {copy.foot}
         </p>
-        <div className="relative mx-auto mt-8 w-full max-w-[31rem]">
+        <div className="relative mx-auto mt-14 w-full max-w-[31rem] sm:mt-16">
           <PaperLetter
             copy={copy}
             image={{ objectPosition: "center center", src: null }}
@@ -610,7 +607,7 @@ function TraditionalEntry({
           mode={mode}
           onClosePreview={onClosePreview}
           onOpen={isCardVisible ? onReveal : onOpen}
-          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
+          primaryLabel={isCardVisible ? "Ver invitación" : "Abrir sobre"}
         />
       </div>
     </section>
@@ -656,7 +653,7 @@ function MinimalEntry({
         <p className="mt-5 text-xs font-semibold uppercase tracking-[0.22em] text-[color:var(--inv-secondary)]">
           {copy.foot}
         </p>
-        <div className="relative mx-auto mt-8 w-full max-w-[30rem]">
+        <div className="relative mx-auto mt-14 w-full max-w-[30rem] sm:mt-16">
           <PaperLetter
             copy={copy}
             image={{ objectPosition: "center center", src: null }}
@@ -677,7 +674,7 @@ function MinimalEntry({
           mode={mode}
           onClosePreview={onClosePreview}
           onOpen={isCardVisible ? onReveal : onOpen}
-          primaryLabel={isCardVisible ? "Ver invitacion" : "Abrir sobre"}
+          primaryLabel={isCardVisible ? "Ver invitación" : "Abrir sobre"}
         />
       </div>
     </section>
@@ -706,10 +703,10 @@ function PaperLetter({
           ? "border-[color:var(--inv-border)]/60 px-5 py-6"
           : "border-[color:var(--inv-border)]/70 px-5 py-6 outline outline-1 outline-offset-[-10px] outline-[color:var(--inv-border)]/28",
         variant === "ornate"
-          ? "top-[-18%]"
+          ? "top-[-34%]"
           : variant === "traditional"
-            ? "top-[-16%]"
-            : "top-[-20%]",
+            ? "top-[-32%]"
+            : "top-[-34%]",
         isVisible ? "translate-y-0 opacity-100" : "translate-y-16 opacity-0",
       ].join(" ")}
     >
@@ -813,20 +810,14 @@ function EntryActions({
           onClick={onClosePreview}
           type="button"
         >
-          Volver a la invitacion
+          Volver a la invitación
         </button>
       ) : null}
     </div>
   );
 }
 
-function TerraEnvelope({
-  initials,
-  isOpen,
-}: {
-  initials: string;
-  isOpen: boolean;
-}) {
+function TerraEnvelope({ isOpen }: { isOpen: boolean }) {
   return (
     <div className="absolute inset-0 drop-shadow-[0_28px_70px_rgba(44,33,29,0.2)]">
       <div className="absolute inset-x-[4%] bottom-[6%] top-[20%] overflow-hidden border border-[color:var(--inv-border)]/70 bg-[color:var(--inv-primary)]">
@@ -844,9 +835,6 @@ function TerraEnvelope({
         className="absolute left-1/2 top-[56%] z-20 size-20 -translate-x-1/2 -translate-y-1/2 object-contain sm:size-24"
         src="/wedding-themes/shared/seals/gold-wax-seal.png"
       />
-      <span className="absolute left-1/2 top-[56%] z-30 -translate-x-1/2 -translate-y-1/2 font-serif text-2xl text-[color:var(--inv-primary)] sm:text-3xl">
-        {initials}
-      </span>
     </div>
   );
 }
@@ -921,8 +909,8 @@ function getEntryCopy({
     const passLabel = recipient.maxGuests === 1 ? "1 pase" : `${recipient.maxGuests} pases`;
 
     return {
-      description: `Con mucho carino hemos reservado esta invitacion para ${recipient.displayName}.`,
-      detail: "Invitacion para",
+      description: "Hemos preparado esta entrada con mucho cariño.",
+      detail: "Invitación para",
       foot: passLabel,
       headline: recipient.displayName,
       title: recipient.displayName,
@@ -930,7 +918,7 @@ function getEntryCopy({
   }
 
   return {
-    description: `Te damos la bienvenida a la invitacion de ${coupleName}.`,
+    description: "Nos emociona compartir este momento contigo.",
     detail: "Bienvenida",
     foot: dateLabel,
     headline: coupleName,

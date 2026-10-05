@@ -26,7 +26,17 @@ export default async function AdminGuestsPage() {
   const requestHeaders = await headers();
   const host = requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
-  const data = await getGuestsPageData(supabase, `${protocol}://${host}`);
+  let data;
+
+  try {
+    data = await getGuestsPageData(supabase, `${protocol}://${host}`);
+  } catch (error) {
+    if (error instanceof Error && error.message === "EVENT_NOT_FOUND") {
+      redirect("/admin/personal/onboarding");
+    }
+
+    throw error;
+  }
   const invitationHref = `/i/${data.event.slug}`;
 
   return (

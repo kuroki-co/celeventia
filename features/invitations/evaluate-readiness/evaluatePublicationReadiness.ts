@@ -9,6 +9,8 @@ export type PublicationRequirementId =
   | "event_date"
   | "main_location"
   | "main_time"
+  | "main_address"
+  | "main_map"
   | "main_content"
   | "theme"
   | "palette"
@@ -37,18 +39,28 @@ export function evaluatePublicationReadiness(
     },
     {
       id: "event_date",
-      label: "Fecha del evento",
-      complete: hasText(event.dateLabel),
+      label: "Fecha definida",
+      complete: hasText(event.eventDate),
     },
     {
       id: "main_location",
       label: "Lugar principal",
-      complete: hasText(event.mainLocationName),
+      complete: Boolean(getMainLocation(event)?.name?.trim()),
     },
     {
       id: "main_time",
       label: "Hora principal",
-      complete: hasText(event.mainLocationTime),
+      complete: Boolean(getMainLocation(event)?.time?.trim()),
+    },
+    {
+      id: "main_address",
+      label: "Direccion del lugar principal",
+      complete: Boolean(getMainLocation(event)?.address?.trim()),
+    },
+    {
+      id: "main_map",
+      label: "Mapa valido",
+      complete: isValidMapUrl(getMainLocation(event)?.mapUrl),
     },
     {
       id: "main_content",
@@ -84,4 +96,22 @@ export function evaluatePublicationReadiness(
 
 function hasText(value: string | null | undefined) {
   return Boolean(value?.trim());
+}
+
+function getMainLocation(event: PersonalInvitationEvent) {
+  return event.content.locations?.find((location) => location.enabled !== false);
+}
+
+function isValidMapUrl(value: string | null | undefined) {
+  if (!value) {
+    return false;
+  }
+
+  try {
+    const url = new URL(value);
+
+    return ["http:", "https:"].includes(url.protocol);
+  } catch {
+    return false;
+  }
 }

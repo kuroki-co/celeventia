@@ -53,7 +53,7 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
   const currentPalette = getInvitationPalette(paletteId);
   const showFloatingControls = isPanelOpen || isControlsVisible;
   const previewEvent = useMemo(
-    () => ({ ...event, themeId, paletteId }),
+    () => ({ ...event, ...event.content, themeId, paletteId }),
     [event, paletteId, themeId],
   );
 

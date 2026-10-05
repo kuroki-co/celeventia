@@ -7,16 +7,20 @@ import { publishInvitation, type PublishInvitationState } from "./action";
 
 type PublishInvitationFormProps = {
   disabled: boolean;
+  isPublished?: boolean;
 };
 
 const initialState: PublishInvitationState = {};
 
-export function PublishInvitationForm({ disabled }: PublishInvitationFormProps) {
+export function PublishInvitationForm({
+  disabled,
+  isPublished = false,
+}: PublishInvitationFormProps) {
   const [state, formAction] = useActionState(publishInvitation, initialState);
 
   return (
     <form action={formAction} className="mt-6">
-      <SubmitButton disabled={disabled} />
+      <SubmitButton disabled={disabled} isPublished={isPublished} />
       <p
         aria-live="polite"
         className={[
@@ -30,7 +34,13 @@ export function PublishInvitationForm({ disabled }: PublishInvitationFormProps) 
   );
 }
 
-function SubmitButton({ disabled }: { disabled: boolean }) {
+function SubmitButton({
+  disabled,
+  isPublished,
+}: {
+  disabled: boolean;
+  isPublished: boolean;
+}) {
   const { pending } = useFormStatus();
 
   return (
@@ -39,7 +49,11 @@ function SubmitButton({ disabled }: { disabled: boolean }) {
       disabled={disabled || pending}
       type="submit"
     >
-      {pending ? "Publicando..." : "Publicar invitacion"}
+      {pending
+        ? "Guardando..."
+        : isPublished
+          ? "Actualizar invitacion publicada"
+          : "Publicar invitacion"}
     </button>
   );
 }

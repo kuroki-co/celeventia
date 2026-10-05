@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { DashboardPage } from "@/features/dashboard/main/DashboardPage";
 import { getDashboardData } from "@/features/dashboard/main/data";
+import { getPersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
 import { createClient } from "@/shared/supabase/server";
 
 export const metadata: Metadata = {
@@ -20,7 +21,13 @@ export default async function AdminPersonalPage() {
     redirect("/admin/login");
   }
 
-  const dashboardData = getDashboardData();
+  const event = await getPersonalInvitationEvent(supabase);
+
+  if (!event || !event.isConfigured) {
+    redirect("/admin/personal/onboarding");
+  }
+
+  const dashboardData = await getDashboardData(supabase, event);
 
   return <DashboardPage data={dashboardData} />;
 }

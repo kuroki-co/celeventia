@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 
-import { previewWeddingDemoContent } from "../demoData";
 import { invitationFontClassName } from "../invitation-fonts";
 import { GiftCopyAction } from "./GiftCopyAction";
 import { InvitationEntryGate } from "./InvitationEntryGate";
@@ -73,10 +72,7 @@ export function WeddingInvitation({
   const theme = getInvitationTheme(event.themeId);
   const palette = getInvitationPalette(event.paletteId);
   const colors = palette.colors;
-  const content =
-    mode === "preview"
-      ? mergePreviewContent(event, theme.frame)
-      : normalizeContent(event);
+  const content = normalizeContent(event);
   const locations = getLocations(event, content, mode);
   const heroImage = content.heroImage;
   const entryImage = resolveHeroImage(heroImage);
@@ -169,8 +165,6 @@ export function WeddingInvitation({
       </div>
     </>
   );
-  const shouldShowEntry = mode === "public" || entryPreviewKey > 0;
-
   return (
     <article
       className={[
@@ -196,21 +190,17 @@ export function WeddingInvitation({
         } as CSSProperties
       }
     >
-      {shouldShowEntry ? (
-        <InvitationEntryGate
-          coupleName={event.coupleName}
-          dateLabel={event.dateLabel}
-          frame={theme.frame}
-          image={entryImage}
-          mode={mode}
-          previewKey={entryPreviewKey}
-          recipient={recipient ?? null}
-        >
-          {invitationBody}
-        </InvitationEntryGate>
-      ) : (
-        invitationBody
-      )}
+      <InvitationEntryGate
+        coupleName={event.coupleName}
+        dateLabel={event.dateLabel}
+        frame={theme.frame}
+        image={entryImage}
+        mode={mode}
+        previewKey={entryPreviewKey}
+        recipient={recipient ?? null}
+      >
+        {invitationBody}
+      </InvitationEntryGate>
     </article>
   );
 }
@@ -650,53 +640,74 @@ function LocationsSection({
         </p>
       </div>
       <div className="mx-auto mt-11 grid max-w-3xl gap-14 sm:mt-12 sm:gap-16">
-        {locations.map((location) => (
-          <article
-            className="text-center"
-            key={`${location.kind}-${location.name}`}
-          >
-            {location.image ? (
-              <img
-                alt=""
-                className={[
-                  "h-64 w-full object-cover sm:h-80",
-                  presentation.imageClassName,
-                ].join(" ")}
-                src={location.image}
-              />
-            ) : null}
-            <div className={presentation.locationDetailsClassName}>
-              <p className="font-sans text-[0.7rem] font-medium uppercase tracking-[0.24em] text-[color:var(--inv-secondary)]">
-                {location.kind}
-              </p>
-              <h3 className="mx-auto mt-4 max-w-xl font-serif text-[2rem] font-normal leading-tight text-[color:var(--inv-primary)] sm:text-[2.55rem]">
-                {location.name}
-              </h3>
-              <p className="mt-4 font-sans text-sm font-normal text-[color:var(--inv-text)]/78">
-                {[location.date, location.time].filter(Boolean).join(" - ")}
-              </p>
-              {location.address ? (
-                <p className="mx-auto mt-3 max-w-md font-sans text-sm leading-6 text-[color:var(--inv-muted)]">
-                  {location.address}
+        {locations.map((location) => {
+          const mapUrl = getUsableMapUrl(location.mapUrl);
+
+          return (
+            <article
+              className="text-center"
+              key={`${location.kind}-${location.name}`}
+            >
+              {location.image ? (
+                <img
+                  alt=""
+                  className={[
+                    "h-64 w-full object-cover sm:h-80",
+                    presentation.imageClassName,
+                  ].join(" ")}
+                  src={location.image}
+                />
+              ) : null}
+              <div className={presentation.locationDetailsClassName}>
+                <p className="font-sans text-[0.7rem] font-medium uppercase tracking-[0.24em] text-[color:var(--inv-secondary)]">
+                  {location.kind}
                 </p>
-              ) : null}
-              {location.mapUrl ? (
-                <a
-                  className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 border border-[color:var(--inv-accent)]/65 bg-transparent px-5 text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--inv-primary)] transition-colors hover:border-[color:var(--inv-secondary)] hover:text-[color:var(--inv-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
-                  href={location.mapUrl}
-                  rel="noreferrer"
-                  target="_blank"
-                >
-                  Ver ubicacion
-                  <span aria-hidden="true">-&gt;</span>
-                </a>
-              ) : null}
-            </div>
-          </article>
-        ))}
+                <h3 className="mx-auto mt-4 max-w-xl font-serif text-[2rem] font-normal leading-tight text-[color:var(--inv-primary)] sm:text-[2.55rem]">
+                  {location.name}
+                </h3>
+                <p className="mt-4 font-sans text-sm font-normal text-[color:var(--inv-text)]/78">
+                  {[location.date, location.time].filter(Boolean).join(" - ")}
+                </p>
+                {location.address ? (
+                  <p className="mx-auto mt-3 max-w-md font-sans text-sm leading-6 text-[color:var(--inv-muted)]">
+                    {location.address}
+                  </p>
+                ) : null}
+                {mapUrl ? (
+                  <a
+                    className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 border border-[color:var(--inv-accent)]/65 bg-transparent px-5 text-xs font-medium uppercase tracking-[0.18em] text-[color:var(--inv-primary)] transition-colors hover:border-[color:var(--inv-secondary)] hover:text-[color:var(--inv-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
+                    href={mapUrl}
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Ver ubicación
+                    <span aria-hidden="true">-&gt;</span>
+                  </a>
+                ) : null}
+              </div>
+            </article>
+          );
+        })}
       </div>
     </section>
   );
+}
+
+function getUsableMapUrl(mapUrl?: string | null) {
+  const normalizedMapUrl = mapUrl?.trim();
+
+  if (!normalizedMapUrl) {
+    return null;
+  }
+
+  const genericMapUrls = new Set([
+    "https://maps.google.com",
+    "https://maps.google.com/",
+    "https://www.google.com/maps",
+    "https://www.google.com/maps/",
+  ]);
+
+  return genericMapUrls.has(normalizedMapUrl) ? null : normalizedMapUrl;
 }
 
 function TimelineSection({
@@ -1068,7 +1079,11 @@ function RsvpSection({
         ) : null}
         {children}
         {showPreviewFallback ? (
-          <div className="mx-auto mt-7 grid max-w-2xl gap-3 sm:grid-cols-2">
+          <div className="mx-auto mt-7 max-w-2xl border border-[color:var(--inv-border)]/70 bg-[color:var(--inv-primary)]/[0.04] p-4 sm:p-5">
+            <p className="mb-4 text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--inv-muted)]">
+              Vista de ejemplo del formulario
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
             <button className="inline-flex min-h-12 items-center justify-center gap-2 border border-[color:var(--inv-secondary)] bg-[color:var(--inv-secondary)]/10 px-5 text-sm font-semibold text-[color:var(--inv-primary)]">
               <span
                 aria-hidden="true"
@@ -1078,9 +1093,10 @@ function RsvpSection({
               </span>
               Sí, asistiremos
             </button>
-            <button className="min-h-12 border border-[color:var(--inv-border)] bg-transparent px-5 text-sm font-semibold text-[color:var(--inv-muted)]">
+            <button className="min-h-12 border border-[color:var(--inv-border)] bg-[color:var(--inv-surface)]/45 px-5 text-sm font-semibold text-[color:var(--inv-muted)]">
               No podremos asistir
             </button>
+            </div>
           </div>
         ) : null}
       </div>
@@ -1739,97 +1755,6 @@ function SectionHeader({
   );
 }
 
-function mergePreviewContent(event: WeddingInvitationEvent, frame: string) {
-  const themedContent = getThemePreviewContent(frame);
-
-  return {
-    ...previewWeddingDemoContent,
-    ...themedContent,
-    ...normalizeContent(event),
-    heroImage:
-      event.heroImage ??
-      themedContent.heroImage ??
-      previewWeddingDemoContent.heroImage,
-    family: event.family ?? previewWeddingDemoContent.family,
-    saveTheDate: event.saveTheDate ?? previewWeddingDemoContent.saveTheDate,
-    locations: event.locations?.length
-      ? event.locations
-      : previewWeddingDemoContent.locations,
-    itinerary: event.itinerary?.length
-      ? event.itinerary
-      : previewWeddingDemoContent.itinerary,
-    dressCode: event.dressCode ?? previewWeddingDemoContent.dressCode,
-    gifts: event.gifts?.length ? event.gifts : previewWeddingDemoContent.gifts,
-    galleryImages: event.galleryImages?.length
-      ? event.galleryImages
-      : (themedContent.galleryImages ?? previewWeddingDemoContent.galleryImages),
-    story: event.story?.length
-      ? event.story
-      : (themedContent.story ?? previewWeddingDemoContent.story),
-    closingMessage:
-      event.closingMessage ?? previewWeddingDemoContent.closingMessage,
-  };
-}
-
-function getThemePreviewContent(frame: string): Partial<WeddingInvitationContent> {
-  if (frame === "classic") {
-    return {
-      heroImage: "/wedding-themes/shared/photos/couple-session-steps.jpg",
-      galleryImages: [
-        "/wedding-themes/shared/photos/couple-session-steps.jpg",
-        "/wedding-themes/shared/photos/civil-ceremony-couple.jpg",
-        "/wedding-themes/shared/photos/gallery-couple-backlight.jpg",
-        "/wedding-themes/shared/photos/gallery-table-details.jpg",
-      ],
-    };
-  }
-
-  if (frame === "organic") {
-    return {
-      heroImage: "/wedding-themes/shared/photos/couple-session-garden.jpg",
-      galleryImages: [
-        "/wedding-themes/shared/photos/couple-session-garden.jpg",
-        "/wedding-themes/shared/photos/story-proposal-bouquet.jpg",
-        "/wedding-themes/shared/photos/gallery-couple-palm-trees.jpg",
-        "/wedding-themes/shared/photos/gallery-reception-table.jpg",
-      ],
-    };
-  }
-
-  if (frame === "ornate") {
-    return {
-      heroImage: "/wedding-themes/shared/backgrounds/couple-hero-background.jpg",
-      story: [
-        {
-          date: "2019",
-          title: "Nos conocimos",
-          description:
-            "Una conversacion sencilla se convirtio en el comienzo de todo.",
-          image:
-            "/wedding-themes/versalles/photos/story-we-met-holding-hands.jpg",
-        },
-        {
-          date: "2022",
-          title: "Nuestro primer viaje",
-          description:
-            "Descubrimos que cada destino era mejor cuando lo caminabamos juntos.",
-          image:
-            "/wedding-themes/versalles/photos/story-first-trip-sunset.jpg",
-        },
-        {
-          date: "2025",
-          title: "La propuesta",
-          description:
-            "Dijimos si con la certeza de querer caminar juntos lo que venga.",
-          image: "/wedding-themes/versalles/photos/story-proposal-bouquet.jpg",
-        },
-      ],
-    };
-  }
-
-  return {};
-}
-
 function normalizeContent(event: WeddingInvitationEvent) {
   return event as WeddingInvitationContent;
 }
@@ -1840,7 +1765,7 @@ function getLocations(
   mode: "preview" | "public",
 ) {
   if (content.locations?.length) {
-    return content.locations;
+    return content.locations.filter((location) => location.enabled !== false);
   }
 
   if (

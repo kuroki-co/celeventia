@@ -30,6 +30,8 @@ export type InvitationSummary = {
 export type GuestSummary = {
   guestsCount: number;
   passesCount?: number;
+  confirmedPeople?: number;
+  pendingGroups?: number;
 };
 
 export type SetupStep = {

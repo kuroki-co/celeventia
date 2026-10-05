@@ -1,4 +1,5 @@
 import type { createClient } from "@/shared/supabase/server";
+import type { WeddingInvitationContent } from "@/invitation/renderer/types";
 
 import type { PublicInvitationData } from "./types";
 
@@ -13,6 +14,7 @@ type PublicInvitationRow = {
   main_location_name: string;
   main_location_time: string;
   main_invitation_message: string;
+  invitation_content: unknown;
   display_name: string;
   max_guests: number;
   response: "confirmed" | "declined" | null;
@@ -29,6 +31,7 @@ type PublicEventRow = {
   main_location_name: string;
   main_location_time: string;
   main_invitation_message: string;
+  invitation_content: unknown;
 };
 
 export async function getPublicInvitation(
@@ -76,6 +79,7 @@ export async function getPublicInvitation(
       mainLocationName: row.main_location_name,
       mainLocationTime: row.main_location_time,
       mainInvitationMessage: row.main_invitation_message,
+      ...parseInvitationContent(row.invitation_content),
     },
     recipient: {
       displayName: row.display_name,
@@ -118,6 +122,7 @@ async function getPublicEvent(
       mainLocationName: row.main_location_name,
       mainLocationTime: row.main_location_time,
       mainInvitationMessage: row.main_invitation_message,
+      ...parseInvitationContent(row.invitation_content),
     },
     recipient: null,
     rsvp: null,
@@ -130,4 +135,12 @@ function parseAttendeeNames(value: unknown) {
   }
 
   return value.filter((item): item is string => typeof item === "string");
+}
+
+function parseInvitationContent(value: unknown): WeddingInvitationContent {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+
+  return value as WeddingInvitationContent;
 }

@@ -1,3 +1,5 @@
+import type { WeddingInvitationContent } from "@/invitation/renderer/types";
+
 export type PublicInvitationData = {
   event: {
     slug: string;
@@ -8,7 +10,7 @@ export type PublicInvitationData = {
     mainLocationName: string;
     mainLocationTime: string;
     mainInvitationMessage: string;
-  };
+  } & WeddingInvitationContent;
   recipient: {
     displayName: string;
     maxGuests: number;

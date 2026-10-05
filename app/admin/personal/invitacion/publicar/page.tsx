@@ -8,7 +8,6 @@ import { DashboardSidebar } from "@/features/dashboard/main/DashboardSidebar";
 import { MobileDashboardNav } from "@/features/dashboard/main/MobileDashboardNav";
 import { CopyPublicUrlButton } from "@/features/invitations/publish/CopyPublicUrlButton";
 import { PublishInvitationForm } from "@/features/invitations/publish/PublishInvitationForm";
-import { syncPublicationStatus } from "@/features/invitations/publish/syncPublicationStatus";
 import { evaluatePublicationReadiness } from "@/features/invitations/evaluate-readiness/evaluatePublicationReadiness";
 import { getPersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
 import { createClient } from "@/shared/supabase/server";
@@ -33,8 +32,12 @@ export default async function AdminInvitationPublishPage() {
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "http";
   const origin = `${protocol}://${host}`;
   const loadedEvent = await getPersonalInvitationEvent(supabase);
+  if (!loadedEvent || !loadedEvent.isConfigured) {
+    redirect("/admin/personal/onboarding");
+  }
+
   const readiness = evaluatePublicationReadiness(loadedEvent);
-  const event = await syncPublicationStatus(supabase, loadedEvent, readiness);
+  const event = loadedEvent;
   const publicHref = `/i/${event.slug}`;
   const publicUrl = `${origin}${publicHref}`;
   const isPublished = event.status === "published";
@@ -131,6 +134,10 @@ export default async function AdminInvitationPublishPage() {
                   {publicUrl}
                 </p>
                 <CopyPublicUrlButton href={publicHref} publicUrl={publicUrl} />
+                <PublishInvitationForm
+                  disabled={!readiness.ready}
+                  isPublished={isPublished}
+                />
               </div>
             ) : (
               <>

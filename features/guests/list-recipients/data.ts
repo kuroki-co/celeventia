@@ -1,4 +1,5 @@
 import type { createClient } from "@/shared/supabase/server";
+import { getPersonalEventId } from "@/features/invitations/get-personal-invitation/data";
 
 import type { GuestsPageData, InvitationRecipient } from "./types";
 
@@ -37,21 +38,21 @@ type RecipientRow = {
     | null;
 };
 
-export async function ensurePersonalEventId(supabase: SupabaseServerClient) {
-  const { data, error } = await supabase.rpc("ensure_personal_event");
+export async function getRequiredPersonalEventId(supabase: SupabaseServerClient) {
+  const eventId = await getPersonalEventId(supabase);
 
-  if (error || !data) {
-    throw new Error(error?.message ?? "No se pudo preparar el evento.");
+  if (!eventId) {
+    throw new Error("EVENT_NOT_FOUND");
   }
 
-  return data as string;
+  return eventId;
 }
 
 export async function getGuestsPageData(
   supabase: SupabaseServerClient,
   origin: string,
 ): Promise<GuestsPageData> {
-  const eventId = await ensurePersonalEventId(supabase);
+  const eventId = await getRequiredPersonalEventId(supabase);
 
   const { data: event, error: eventError } = await supabase
     .from("events")

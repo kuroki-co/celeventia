@@ -22,5 +22,9 @@ export default async function AdminInvitationPreviewPage() {
 
   const event = await getPersonalInvitationEvent(supabase);
 
+  if (!event || !event.isConfigured) {
+    redirect("/admin/personal/onboarding");
+  }
+
   return <InvitationPreviewPage event={event} />;
 }

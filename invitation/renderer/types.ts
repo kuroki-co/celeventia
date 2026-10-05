@@ -83,6 +83,7 @@ export type GiftMethod = {
 };
 
 export type InvitationLocation = {
+  enabled?: boolean;
   kind: string;
   name: string;
   date?: string;
