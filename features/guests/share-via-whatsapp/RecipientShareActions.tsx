@@ -33,8 +33,13 @@ export function RecipientShareActions({
       return;
     }
 
-    await navigator.clipboard.writeText(recipient.publicLink);
-    setCopyStatus("Enlace copiado");
+    try {
+      await navigator.clipboard.writeText(recipient.publicLink);
+      setCopyStatus("Enlace copiado");
+    } catch {
+      setCopyStatus("No pudimos copiar. Selecciona el enlace manualmente.");
+    }
+
     window.setTimeout(() => setCopyStatus(""), 2200);
   }
 
@@ -43,14 +48,25 @@ export function RecipientShareActions({
       return;
     }
 
-    const text = encodeURIComponent(message);
+    const finalMessage = ensureMessageContainsLink(message, recipient.publicLink);
+    const text = encodeURIComponent(finalMessage);
     const phone = toWhatsAppPhone(recipient.normalizedPhone);
+    const opened = window.open(
+      `https://wa.me/${phone}?text=${text}`,
+      "_blank",
+      "noopener",
+    );
+
+    if (!opened) {
+      setCopyStatus("No pudimos abrir WhatsApp. Copia el enlace manualmente.");
+      return;
+    }
 
     startTransition(async () => {
-      await markRecipientShared(recipient.id);
-    });
+      const result = await markRecipientShared(recipient.id);
 
-    window.open(`https://wa.me/${phone}?text=${text}`, "_blank", "noopener");
+      setCopyStatus(result.error ?? "WhatsApp abierto");
+    });
   }
 
   return (
@@ -108,6 +124,12 @@ export function RecipientShareActions({
           <p className="mt-3 break-all text-xs font-medium text-midnight-navy/54">
             {recipient.publicLink}
           </p>
+          {recipient.normalizedPhone ? (
+            <p className="mt-2 text-xs font-semibold text-midnight-navy/62">
+              Se abrira WhatsApp para {recipient.normalizedPhone}. Envialo desde
+              ahi.
+            </p>
+          ) : null}
           <button
             className="mt-4 inline-flex min-h-10 items-center justify-center rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition-colors hover:bg-[#7D5F78] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve disabled:cursor-wait disabled:bg-muted-mauve/55"
             disabled={isPending}
@@ -137,4 +159,12 @@ function getDefaultMessage(displayName: string, publicLink: string) {
     "",
     publicLink,
   ].join("\n");
+}
+
+function ensureMessageContainsLink(message: string, publicLink: string) {
+  if (message.includes(publicLink)) {
+    return message;
+  }
+
+  return [message.trim(), "", publicLink].filter(Boolean).join("\n");
 }

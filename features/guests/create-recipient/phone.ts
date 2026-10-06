@@ -13,16 +13,32 @@ export function normalizePhone(input: string) {
   }
 
   if (hasInternationalPrefix) {
-    return `+${digits}`;
+    return isValidInternationalPhone(digits) ? `+${digits}` : null;
   }
 
-  if (digits.length === 9) {
+  if (isValidPeruMobile(digits)) {
     return `+51${digits}`;
   }
 
-  return `+${digits}`;
+  return null;
 }
 
 export function toWhatsAppPhone(input: string) {
   return input.replace(/\D/g, "");
+}
+
+export function isValidOptionalPhone(input: string | undefined) {
+  if (!input?.trim()) {
+    return true;
+  }
+
+  return Boolean(normalizePhone(input));
+}
+
+function isValidPeruMobile(digits: string) {
+  return /^9\d{8}$/.test(digits);
+}
+
+function isValidInternationalPhone(digits: string) {
+  return /^\d{8,15}$/.test(digits);
 }

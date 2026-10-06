@@ -63,11 +63,17 @@ export async function updateWeddingDetails(
   const coupleName = formatCoupleName(parsed.data);
   const dateLabel =
     formatDateLabel(parsed.data.eventDate) ?? "Fecha por definir";
+  const content = syncContentDate(
+    event.content,
+    dateLabel,
+    parsed.data.eventDate ?? null,
+  );
 
-  const { error } = await supabase
+  const { data: updatedEvent, error } = await supabase
     .from("events")
     .update({
       city: parsed.data.city || null,
+      invitation_content: content,
       couple_name: coupleName,
       draft_revision: event.draftRevision + 1,
       event_date: parsed.data.eventDate || null,
@@ -78,18 +84,23 @@ export async function updateWeddingDetails(
       partner_one_name: parsed.data.partnerOneName,
       partner_two_name: parsed.data.partnerTwoName,
     })
-    .eq("id", event.id);
+    .eq("id", event.id)
+    .eq("draft_revision", event.draftRevision)
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !updatedEvent) {
     return {
-      error: "No pudimos guardar los datos.",
+      error: error
+        ? "No pudimos guardar los datos."
+        : "Hay cambios mas recientes. Recarga la pagina antes de volver a guardar.",
       formKey: createFormKey(),
       values,
     };
   }
 
   revalidateEditor(event.slug);
-  return { formKey: createFormKey(), success: "Guardado.", values };
+  return { formKey: createFormKey(), success: "Guardado en tu borrador.", values };
 }
 
 export async function updateLocations(
@@ -165,11 +176,14 @@ export async function updateLocations(
   const content = {
     ...event.content,
     locations,
-    saveTheDate: buildSaveTheDate(event.eventDate),
+    saveTheDate: buildSaveTheDate(
+      event.eventDate,
+      event.content.saveTheDate,
+    ),
   };
 
   const firstLocation = locations.find((location) => location.enabled);
-  const { error } = await supabase
+  const { data: updatedEvent, error } = await supabase
     .from("events")
     .update({
       draft_revision: event.draftRevision + 1,
@@ -177,18 +191,23 @@ export async function updateLocations(
       main_location_name: firstLocation?.name || null,
       main_location_time: firstLocation?.time || null,
     })
-    .eq("id", event.id);
+    .eq("id", event.id)
+    .eq("draft_revision", event.draftRevision)
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !updatedEvent) {
     return {
-      error: "No pudimos guardar los lugares.",
+      error: error
+        ? "No pudimos guardar los lugares."
+        : "Hay cambios mas recientes. Recarga la pagina antes de volver a guardar.",
       formKey: createFormKey(),
       values,
     };
   }
 
   revalidateEditor(event.slug);
-  return { formKey: createFormKey(), success: "Guardado.", values };
+  return { formKey: createFormKey(), success: "Guardado en tu borrador.", values };
 }
 
 export async function updateSimpleContent(
@@ -275,27 +294,50 @@ export async function updateSimpleContent(
     content.closingMessage = parsed.data.closingMessage || null;
   }
 
-  const { error } = await supabase
+  const { data: updatedEvent, error } = await supabase
     .from("events")
     .update({
       draft_revision: event.draftRevision + 1,
       invitation_content: content,
     })
-    .eq("id", event.id);
+    .eq("id", event.id)
+    .eq("draft_revision", event.draftRevision)
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !updatedEvent) {
     return {
-      error: "No pudimos guardar el contenido.",
+      error: error
+        ? "No pudimos guardar el contenido."
+        : "Hay cambios mas recientes. Recarga la pagina antes de volver a guardar.",
       formKey: createFormKey(),
       values,
     };
   }
 
   revalidateEditor(event.slug);
-  return { formKey: createFormKey(), success: "Guardado.", values };
+  return { formKey: createFormKey(), success: "Guardado en tu borrador.", values };
 }
 
-function buildSaveTheDate(value: string | null) {
+function syncContentDate(
+  content: WeddingInvitationContent,
+  dateLabel: string,
+  eventDate: string | null,
+): WeddingInvitationContent {
+  return {
+    ...content,
+    locations: content.locations?.map((location) => ({
+      ...location,
+      date: dateLabel,
+    })),
+    saveTheDate: buildSaveTheDate(eventDate, content.saveTheDate),
+  };
+}
+
+function buildSaveTheDate(
+  value: string | null,
+  existing?: WeddingInvitationContent["saveTheDate"],
+) {
   if (!value) {
     return null;
   }
@@ -320,6 +362,7 @@ function buildSaveTheDate(value: string | null) {
       timeZone: "UTC",
       weekday: "long",
     }).format(date),
+    ...(existing?.message ? { message: existing.message } : {}),
   };
 }
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useMemo, useState } from "react";
 import type { ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 
 import type { PersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
 import { InvitationPhotosEditor } from "@/features/media/manage-draft-images/InvitationPhotosEditor";
@@ -19,6 +20,7 @@ type InvitationContentEditorProps = {
 };
 
 type EditorSectionId = "" | "datos" | "lugares" | "contenido" | "fotografias";
+type DirtyStatus = "dirty" | "submitted";
 
 const initialState: UpdateContentState = {};
 
@@ -40,6 +42,7 @@ export function InvitationContentEditor({
     updateSimpleContent,
     initialState,
   );
+  const [dirtyForms, setDirtyForms] = useState<Record<string, DirtyStatus>>({});
   const ceremony = event.content.locations?.find(
     (location) => location.kind === "Ceremonia",
   );
@@ -49,9 +52,56 @@ export function InvitationContentEditor({
   const detailsValues = detailsState.values;
   const locationsValues = locationsState.values;
   const contentValues = contentState.values;
+  const hasUnsavedChanges = useMemo(
+    () =>
+      dirtyForms.datos === "dirty" ||
+      (dirtyForms.datos === "submitted" && Boolean(detailsState.error)) ||
+      dirtyForms.lugares === "dirty" ||
+      (dirtyForms.lugares === "submitted" && Boolean(locationsState.error)) ||
+      dirtyForms.contenido === "dirty" ||
+      (dirtyForms.contenido === "submitted" && Boolean(contentState.error)),
+    [
+      contentState.error,
+      detailsState.error,
+      dirtyForms,
+      locationsState.error,
+    ],
+  );
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) {
+      return;
+    }
+
+    function protectUnsavedChanges(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = "";
+    }
+
+    window.addEventListener("beforeunload", protectUnsavedChanges);
+
+    return () => {
+      window.removeEventListener("beforeunload", protectUnsavedChanges);
+    };
+  }, [hasUnsavedChanges]);
+
+  function markDirty(formId: EditorSectionId) {
+    setDirtyForms((current) =>
+      current[formId] === "dirty" ? current : { ...current, [formId]: "dirty" },
+    );
+  }
+
+  function markSubmitted(formId: EditorSectionId) {
+    setDirtyForms((current) => ({ ...current, [formId]: "submitted" }));
+  }
 
   return (
     <div className="grid gap-3">
+      {hasUnsavedChanges ? (
+        <div className="rounded-2xl border border-muted-mauve/20 bg-white px-4 py-3 text-sm font-semibold text-midnight-navy">
+          Cambios sin guardar. Guarda antes de salir o recargar la pagina.
+        </div>
+      ) : null}
       <EditorSection
         id="datos"
         openSection={openSection}
@@ -61,7 +111,8 @@ export function InvitationContentEditor({
         <form
           action={detailsAction}
           className="grid gap-4"
-          key={detailsState.formKey}
+          onInput={() => markDirty("datos")}
+          onSubmit={() => markSubmitted("datos")}
         >
           <input name="eventId" type="hidden" value={event.id} />
           <div className="grid gap-4 sm:grid-cols-2">
@@ -70,6 +121,7 @@ export function InvitationContentEditor({
                 detailsValues?.partnerOneName,
                 event.partnerOneName,
               )}
+              error={detailsState.fieldErrors?.partnerOneName}
               label="Primera persona"
               name="partnerOneName"
               required
@@ -79,6 +131,7 @@ export function InvitationContentEditor({
                 detailsValues?.partnerTwoName,
                 event.partnerTwoName,
               )}
+              error={detailsState.fieldErrors?.partnerTwoName}
               label="Segunda persona"
               name="partnerTwoName"
               required
@@ -104,6 +157,7 @@ export function InvitationContentEditor({
                 detailsValues?.eventDate,
                 event.eventDate ?? "",
               )}
+              error={detailsState.fieldErrors?.eventDate}
               label="Fecha"
               name="eventDate"
               type="date"
@@ -113,12 +167,14 @@ export function InvitationContentEditor({
                 detailsValues?.eventTimezone,
                 event.eventTimezone,
               )}
+              error={detailsState.fieldErrors?.eventTimezone}
               label="Zona horaria"
               name="eventTimezone"
               required
             />
             <TextField
               defaultValue={getStringValue(detailsValues?.city, event.city ?? "")}
+              error={detailsState.fieldErrors?.city}
               label="Ciudad"
               name="city"
             />
@@ -126,6 +182,7 @@ export function InvitationContentEditor({
           <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
             Mensaje principal
             <textarea
+              aria-invalid={Boolean(detailsState.fieldErrors?.mainInvitationMessage)}
               className={`${inputClassName} min-h-28 py-3`}
               defaultValue={getStringValue(
                 detailsValues?.mainInvitationMessage,
@@ -133,6 +190,7 @@ export function InvitationContentEditor({
               )}
               name="mainInvitationMessage"
             />
+            <FieldError message={detailsState.fieldErrors?.mainInvitationMessage} />
           </label>
           <SaveFooter state={detailsState} />
         </form>
@@ -147,7 +205,8 @@ export function InvitationContentEditor({
         <form
           action={locationsAction}
           className="grid gap-5"
-          key={locationsState.formKey}
+          onInput={() => markDirty("lugares")}
+          onSubmit={() => markSubmitted("lugares")}
         >
           <input name="eventId" type="hidden" value={event.id} />
           <LocationFields
@@ -167,6 +226,7 @@ export function InvitationContentEditor({
               locationsValues?.ceremonyTime,
               ceremony?.time ?? "",
             )}
+            errors={locationsState.fieldErrors}
             label="Ceremonia"
             prefix="ceremony"
           />
@@ -187,6 +247,7 @@ export function InvitationContentEditor({
               locationsValues?.receptionTime,
               reception?.time ?? "",
             )}
+            errors={locationsState.fieldErrors}
             label="Recepcion"
             prefix="reception"
           />
@@ -203,7 +264,8 @@ export function InvitationContentEditor({
         <form
           action={contentAction}
           className="grid gap-4"
-          key={contentState.formKey}
+          onInput={() => markDirty("contenido")}
+          onSubmit={() => markSubmitted("contenido")}
         >
           <input name="eventId" type="hidden" value={event.id} />
           <TextField
@@ -211,7 +273,8 @@ export function InvitationContentEditor({
               contentValues?.tagline,
               event.content.tagline ?? "",
             )}
-            label="Frase bajo el hero"
+            error={contentState.fieldErrors?.tagline}
+            label="Frase de portada (opcional)"
             name="tagline"
           />
           <TextField
@@ -219,34 +282,41 @@ export function InvitationContentEditor({
               contentValues?.dressCodeStyle,
               event.content.dressCode?.style ?? "",
             )}
+            error={contentState.fieldErrors?.dressCodeStyle}
             label="Vestimenta"
             name="dressCodeStyle"
           />
           <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
             Recomendaciones de vestimenta
             <textarea
+              aria-invalid={Boolean(contentState.fieldErrors?.dressCodeRecommendations)}
               className={`${inputClassName} min-h-24 py-3`}
               defaultValue={getStringValue(
                 contentValues?.dressCodeRecommendations,
-                event.content.dressCode?.women ?? "",
+                event.content.dressCode?.general ?? "",
               )}
               name="dressCodeRecommendations"
             />
+            <FieldError message={contentState.fieldErrors?.dressCodeRecommendations} />
           </label>
           <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
             Mensaje de regalos
             <textarea
+              aria-invalid={Boolean(contentState.fieldErrors?.giftMessage)}
               className={`${inputClassName} min-h-24 py-3`}
               defaultValue={getStringValue(
                 contentValues?.giftMessage,
-                event.content.gifts?.[0]?.description ?? "",
+                event.content.gifts?.find((gift) => gift.kind === "envelope")
+                  ?.description ?? "",
               )}
               name="giftMessage"
             />
+            <FieldError message={contentState.fieldErrors?.giftMessage} />
           </label>
           <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
             Mensaje de cierre
             <textarea
+              aria-invalid={Boolean(contentState.fieldErrors?.closingMessage)}
               className={`${inputClassName} min-h-28 py-3`}
               defaultValue={getStringValue(
                 contentValues?.closingMessage,
@@ -254,6 +324,7 @@ export function InvitationContentEditor({
               )}
               name="closingMessage"
             />
+            <FieldError message={contentState.fieldErrors?.closingMessage} />
           </label>
           <SaveFooter state={contentState} />
         </form>
@@ -297,19 +368,28 @@ function EditorSection({
         {title}
         <span className="text-lg text-muted-mauve">{isOpen ? "-" : "+"}</span>
       </button>
-      {isOpen ? <div className="border-t border-midnight-navy/8 p-5">{children}</div> : null}
+      <div
+        className={[
+          "border-t border-midnight-navy/8 p-5",
+          isOpen ? "grid" : "hidden",
+        ].join(" ")}
+      >
+        {children}
+      </div>
     </section>
   );
 }
 
 function TextField({
   defaultValue,
+  error,
   label,
   name,
   required = false,
   type = "text",
 }: {
   defaultValue: string;
+  error?: string;
   label: string;
   name: string;
   required?: boolean;
@@ -319,12 +399,14 @@ function TextField({
     <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
       {label}
       <input
+        aria-invalid={Boolean(error)}
         className={inputClassName}
         defaultValue={defaultValue}
         name={name}
         required={required}
         type={type}
       />
+      <FieldError message={error} />
     </label>
   );
 }
@@ -334,6 +416,7 @@ function LocationFields({
   defaultMapUrl,
   defaultName,
   defaultTime,
+  errors,
   label,
   prefix,
 }: {
@@ -341,6 +424,7 @@ function LocationFields({
   defaultMapUrl?: string;
   defaultName?: string;
   defaultTime?: string;
+  errors?: Record<string, string>;
   label: string;
   prefix: "ceremony" | "reception";
 }) {
@@ -352,11 +436,13 @@ function LocationFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           defaultValue={defaultName ?? ""}
+          error={errors?.[`${prefix}Name`]}
           label="Nombre del lugar"
           name={`${prefix}Name`}
         />
         <TextField
           defaultValue={defaultTime ?? ""}
+          error={errors?.[`${prefix}Time`]}
           label="Hora"
           name={`${prefix}Time`}
           type="time"
@@ -364,12 +450,14 @@ function LocationFields({
       </div>
       <TextField
         defaultValue={defaultAddress ?? ""}
+        error={errors?.[`${prefix}Address`]}
         label="Direccion"
         name={`${prefix}Address`}
       />
       <TextField
         defaultValue={defaultMapUrl ?? ""}
-        label="Mapa"
+        error={errors?.[`${prefix}MapUrl`]}
+        label="Enlace del mapa"
         name={`${prefix}MapUrl`}
         type="url"
       />
@@ -378,6 +466,8 @@ function LocationFields({
 }
 
 function SaveFooter({ state }: { state: UpdateContentState }) {
+  const { pending } = useFormStatus();
+
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <p
@@ -387,15 +477,30 @@ function SaveFooter({ state }: { state: UpdateContentState }) {
           state.error ? "text-[#8A3A3A]" : "text-[#24523D]",
         ].join(" ")}
       >
-        {state.error ?? state.success ?? ""}
+        {pending
+          ? "Guardando..."
+          : state.error ?? state.success ?? ""}
       </p>
       <button
-        className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-muted-mauve px-5 text-sm font-semibold text-white transition hover:bg-[#7D5F78]"
+        className="inline-flex min-h-11 items-center justify-center rounded-2xl bg-muted-mauve px-5 text-sm font-semibold text-white transition hover:bg-[#7D5F78] disabled:cursor-wait disabled:bg-muted-mauve/55"
+        disabled={pending}
         type="submit"
       >
-        Guardar seccion
+        {pending ? "Guardando..." : "Guardar seccion"}
       </button>
     </div>
+  );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <span className="text-sm font-semibold text-[#8A3A3A]">
+      {message}
+    </span>
   );
 }
 

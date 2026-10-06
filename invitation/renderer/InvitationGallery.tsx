@@ -6,6 +6,7 @@ import type { TouchEvent } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { GalleryImage } from "./types";
+import { maxGalleryImages } from "./gallery-limits";
 
 type InvitationGalleryProps = {
   images: GalleryImage[];
@@ -20,7 +21,6 @@ type NormalizedGalleryImage = {
   order: number;
 };
 
-const maxGalleryImages = 10;
 const maxFeaturedImages = 4;
 
 export function InvitationGallery({
@@ -271,7 +271,6 @@ export function InvitationGallery({
 
 function normalizeGalleryImages(images: GalleryImage[]) {
   return images
-    .slice(0, maxGalleryImages)
     .map((image, index): NormalizedGalleryImage | null => {
       if (typeof image === "string") {
         if (!image) {
@@ -300,7 +299,8 @@ function normalizeGalleryImages(images: GalleryImage[]) {
       };
     })
     .filter((image): image is NormalizedGalleryImage => Boolean(image))
-    .sort((first, second) => first.order - second.order);
+    .sort((first, second) => first.order - second.order)
+    .slice(0, maxGalleryImages);
 }
 
 function getFeaturedImages(images: NormalizedGalleryImage[]) {

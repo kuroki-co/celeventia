@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { createClient } from "@/shared/supabase/server";
+import { getRequiredPersonalEventId } from "../list-recipients/data";
 
 export async function markRecipientShared(recipientId: string) {
   const supabase = await createClient();
@@ -15,6 +16,19 @@ export async function markRecipientShared(recipientId: string) {
     redirect("/admin/login");
   }
 
+  const eventId = await getRequiredPersonalEventId(supabase);
+  const { data: event, error: eventError } = await supabase
+    .from("events")
+    .select("status, published_snapshot")
+    .eq("id", eventId)
+    .single<{ published_snapshot: unknown; status: string }>();
+
+  if (eventError || !event?.published_snapshot || event.status !== "published") {
+    return {
+      error: "Publica la invitacion antes de compartir enlaces.",
+    };
+  }
+
   const { error } = await supabase
     .from("invitation_recipients")
     .update({
@@ -22,11 +36,14 @@ export async function markRecipientShared(recipientId: string) {
       shared_at: new Date().toISOString(),
     })
     .eq("id", recipientId)
-    .not("share_status", "in", "(confirmed,declined)");
+    .eq("event_id", eventId)
+    .in("share_status", ["not_shared", "shared"]);
 
   if (error) {
-    throw new Error("No se pudo registrar el estado compartido.");
+    return { error: "No se pudo registrar el estado compartido." };
   }
 
   revalidatePath("/admin/personal/invitados");
+
+  return { success: "WhatsApp abierto." };
 }

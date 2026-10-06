@@ -100,8 +100,9 @@ export default async function AdminInvitationPublishPage() {
 
             <div className="mt-5 grid gap-2">
               {readiness.requirements.map((requirement) => (
-                <div
+                <Link
                   className="flex min-h-11 items-center gap-3 border-t border-midnight-navy/8 py-3 first:border-t-0"
+                  href={requirement.href}
                   key={requirement.id}
                 >
                   {requirement.complete ? (
@@ -121,7 +122,7 @@ export default async function AdminInvitationPublishPage() {
                   <span className="ml-auto text-xs font-semibold uppercase text-midnight-navy/45">
                     {requirement.complete ? "Completo" : "Pendiente"}
                   </span>
-                </div>
+                </Link>
               ))}
             </div>
 
@@ -138,6 +139,12 @@ export default async function AdminInvitationPublishPage() {
                   disabled={!readiness.ready}
                   isPublished={isPublished}
                 />
+                {event.publishedRevision !== event.draftRevision ? (
+                  <p className="mt-3 text-sm font-semibold text-muted-mauve">
+                    Hay cambios sin publicar. Actualizar invitacion aplica el
+                    borrador al mismo enlace.
+                  </p>
+                ) : null}
               </div>
             ) : (
               <>

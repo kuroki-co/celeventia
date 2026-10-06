@@ -60,6 +60,11 @@ export function SetupStepCard({
         </span>
         <span className="block text-base font-semibold leading-6 text-midnight-navy group-hover:text-muted-mauve">
           {step.title}
+          {step.optional ? (
+            <span className="ml-2 align-middle text-xs font-semibold text-midnight-navy/45">
+              Opcional
+            </span>
+          ) : null}
         </span>
       </span>
 

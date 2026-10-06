@@ -111,6 +111,10 @@ export function PublicRsvpForm({ data, slug, token }: PublicRsvpFormProps) {
           Confirma hasta el {data.rsvp.deadlineLabel}
         </p>
       ) : null}
+      <p className="mb-5 text-center text-sm font-semibold text-[color:var(--inv-text)]">
+        Esta invitacion incluye {maxGuests}{" "}
+        {maxGuests === 1 ? "pase" : "pases"}.
+      </p>
 
       <fieldset>
         <legend className="sr-only">¿Podrán acompañarnos?</legend>
@@ -160,9 +164,14 @@ export function PublicRsvpForm({ data, slug, token }: PublicRsvpFormProps) {
             <p className="text-center font-serif text-xl font-normal text-[color:var(--inv-primary)]">
               Nombres de los asistentes
             </p>
+            <p className="text-center text-sm leading-6 text-[color:var(--inv-muted)]">
+              Puedes escribirlos ahora o completar solo los que tengas claros.
+            </p>
             {attendeeIndexes.map((index) => (
               <label className="block" key={index}>
-                <span className="sr-only">Nombre {index + 1}</span>
+                <span className="mb-2 block text-sm font-semibold text-[color:var(--inv-text)]">
+                  Asistente {index + 1}
+                </span>
                 <input
                   className="min-h-12 w-full border border-[color:var(--inv-border)] bg-transparent px-4 text-sm text-[color:var(--inv-text)] outline-none transition-colors placeholder:text-[color:var(--inv-muted)] focus:border-[color:var(--inv-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
                   name="attendeeNames"

@@ -9,24 +9,35 @@ import { completeOnboardingSchema, createEventSchema } from "./schema";
 
 export type CreateEventState = {
   error?: string;
+  fieldErrors?: Record<string, string>;
+  values?: Record<string, string | undefined>;
+};
+
+export type CompleteOnboardingState = {
+  error?: string;
 };
 
 export async function createPersonalEvent(
   _prevState: CreateEventState,
   formData: FormData,
 ): Promise<CreateEventState> {
-  const parsed = createEventSchema.safeParse({
+  const values = {
     partnerOneName: getStringValue(formData, "partnerOneName") ?? "",
     partnerTwoName: getStringValue(formData, "partnerTwoName") ?? "",
     nameOrder: getStringValue(formData, "nameOrder"),
     hasDate: getStringValue(formData, "hasDate"),
     eventDate: getStringValue(formData, "eventDate"),
-    eventTimezone: getStringValue(formData, "eventTimezone") || "America/Lima",
+    eventTimezone: "America/Lima",
     city: getStringValue(formData, "city"),
-  });
+  };
+  const parsed = createEventSchema.safeParse(values);
 
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Revisa los datos." };
+    return {
+      error: parsed.error.issues[0]?.message ?? "Revisa los datos.",
+      fieldErrors: getFieldErrors(parsed.error),
+      values,
+    };
   }
 
   const supabase = await createClient();
@@ -54,6 +65,7 @@ export async function createPersonalEvent(
         error.message === "PARTNER_NAMES_REQUIRED"
           ? "Ingresa ambos nombres."
           : "No pudimos crear la invitacion. Intentalo nuevamente.",
+      values,
     };
   }
 
@@ -62,13 +74,16 @@ export async function createPersonalEvent(
   redirect("/admin/personal/onboarding");
 }
 
-export async function completeOnboarding(formData: FormData) {
+export async function completeOnboarding(
+  _prevState: CompleteOnboardingState,
+  formData: FormData,
+): Promise<CompleteOnboardingState> {
   const parsed = completeOnboardingSchema.safeParse({
     eventId: formData.get("eventId"),
   });
 
   if (!parsed.success) {
-    return;
+    return { error: "No pudimos confirmar tu invitacion." };
   }
 
   const supabase = await createClient();
@@ -80,10 +95,18 @@ export async function completeOnboarding(formData: FormData) {
     redirect("/admin/login");
   }
 
-  await supabase
+  const { data, error } = await supabase
     .from("events")
     .update({ is_configured: true })
-    .eq("id", parsed.data.eventId);
+    .eq("id", parsed.data.eventId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) {
+    return {
+      error: "No pudimos finalizar el primer ingreso. Intentalo nuevamente.",
+    };
+  }
 
   revalidatePath("/admin/personal");
   revalidatePath("/admin/personal/invitacion/preview");
@@ -94,4 +117,18 @@ function getStringValue(formData: FormData, key: string) {
   const value = formData.get(key);
 
   return typeof value === "string" ? value : undefined;
+}
+
+function getFieldErrors(error: {
+  issues: Array<{ message: string; path: Array<PropertyKey> }>;
+}) {
+  return error.issues.reduce<Record<string, string>>((errors, issue) => {
+    const [field] = issue.path;
+
+    if (typeof field === "string" && !errors[field]) {
+      errors[field] = issue.message;
+    }
+
+    return errors;
+  }, {});
 }

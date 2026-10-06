@@ -24,6 +24,8 @@ Storage:
   - `events/{event_id}/gallery/`
   - `events/{event_id}/story/`
 - Draft uploads store object metadata in `invitation_media` and persistent media references in `events.invitation_content` using `bucket`, `objectPath` and media `id`.
+- Dashboard image uploads reserve an event-scoped object path in a Server Action, upload bytes directly from the authenticated browser session to the private `event-media` bucket, and then finalize metadata/draft association in a second Server Action. This avoids sending 5 MB images or gallery batches through the Server Actions request body.
+- Finalization verifies that the object exists under `events/{event_id}/...`, that Storage metadata matches the allowed MIME type and size, and cleans up uploaded objects when metadata insertion or draft association fails.
 - Signed URLs are generated only at render time for dashboard preview/public invitations and are not stored as permanent source URLs.
 - Published media is marked with `invitation_media.is_published = true` when publication writes `published_snapshot`, so removing or replacing draft photos does not break the public version.
 - `202610050003_public_published_event_media_access.sql` adds a Storage select policy for `anon` limited to objects referenced by a published snapshot.

@@ -65,10 +65,11 @@ export async function getDashboardData(
       icon: "palette",
       title: "Diseno",
       description: `${theme.name} · ${palette.name}`,
-      status: "completed",
+      status: "pending",
       href: "/admin/personal/invitacion/preview",
       ctaLabel: "Cambiar",
-      detail: `${theme.name} · ${palette.name}`,
+      detail: `Actual: ${theme.name} · ${palette.name}`,
+      optional: true,
     },
     {
       id: "photos",
@@ -82,6 +83,7 @@ export async function getDashboardData(
       href: "/admin/personal/invitacion/fotografias",
       ctaLabel: "Editar",
       detail: "Portada y galeria",
+      optional: true,
     },
     {
       id: "guests",
@@ -103,7 +105,8 @@ export async function getDashboardData(
       status: "completed",
       href: "/admin/personal/invitacion/preview",
       ctaLabel: "Ver",
-      detail: "Render compartido con la pagina publica",
+      detail: "Asi veran tu invitacion",
+      optional: true,
     },
     {
       id: "publish",
@@ -164,17 +167,25 @@ export async function getDashboardData(
 }
 
 export function getSetupProgress(steps: SetupStep[]) {
-  const completedSteps = steps.filter((step) => step.status === "completed");
+  const requiredSteps = steps.filter((step) => !step.optional);
+  const completedSteps = requiredSteps.filter(
+    (step) => step.status === "completed",
+  );
 
   return {
     completed: completedSteps.length,
-    total: steps.length,
-    percentage: Math.round((completedSteps.length / steps.length) * 100),
+    total: requiredSteps.length,
+    percentage: Math.round((completedSteps.length / requiredSteps.length) * 100),
   };
 }
 
 export function getNextStep(steps: SetupStep[]) {
   return (
+    steps.find(
+      (step) =>
+        !step.optional &&
+        (step.status === "in_progress" || step.status === "pending"),
+    ) ??
     steps.find(
       (step) => step.status === "in_progress" || step.status === "pending",
     ) ?? steps[0]

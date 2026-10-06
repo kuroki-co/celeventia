@@ -3,10 +3,21 @@
 /* eslint-disable @next/next/no-img-element */
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ImagePlus, Trash2 } from "lucide-react";
-import { useActionState, useId, useMemo, useState, useTransition } from "react";
+import {
+  useActionState,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+  type FormEvent,
+} from "react";
 import { useFormStatus } from "react-dom";
 
+import { createClient } from "@/shared/supabase/client";
 import type {
   GalleryImage,
   HeroImage,
@@ -14,8 +25,15 @@ import type {
 } from "@/invitation/renderer/types";
 import type { PersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
 import { deleteInvitationImage } from "@/features/media/delete-image/action";
-import { uploadInvitationImage, type UploadImageState } from "@/features/media/upload-image/action";
 import {
+  finalizeInvitationImageUpload,
+  prepareInvitationImageUpload,
+  type UploadPurpose,
+} from "@/features/media/upload-image/action";
+import {
+  allowedImageTypes,
+  maxGalleryImages,
+  maxImageSizeBytes,
   allowedImageExtensionsLabel,
   maxImageSizeLabel,
 } from "@/features/media/upload-image/limits";
@@ -31,8 +49,12 @@ type InvitationPhotosEditorProps = {
 };
 
 type GalleryItem = Extract<GalleryImage, { id?: string }>;
+type SelectedPreview = {
+  name: string;
+  size: number;
+  url: string;
+};
 
-const initialUploadState: UploadImageState = {};
 const initialImageState: DraftImageActionState = {};
 
 export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
@@ -94,6 +116,7 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
           <UploadImageForm
             buttonLabel={heroImage ? "Reemplazar portada" : "Subir foto de portada"}
             eventId={event.id}
+            existingGalleryCount={galleryImages.length}
             purpose="invitation"
           />
         </div>
@@ -143,6 +166,7 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
           <UploadImageForm
             buttonLabel="Agregar fotos a la galeria"
             eventId={event.id}
+            existingGalleryCount={galleryImages.length}
             purpose="gallery"
           />
         </div>
@@ -185,18 +209,155 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
 function UploadImageForm({
   buttonLabel,
   eventId,
+  existingGalleryCount,
   purpose,
 }: {
   buttonLabel: string;
+  existingGalleryCount: number;
   eventId: string;
-  purpose: "gallery" | "invitation";
+  purpose: UploadPurpose;
 }) {
-  const [state, formAction] = useActionState(uploadInvitationImage, initialUploadState);
+  const router = useRouter();
   const inputId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [previews, setPreviews] = useState<SelectedPreview[]>([]);
   const [selectedFiles, setSelectedFiles] = useState("");
+  const [status, setStatus] = useState<{
+    error?: string;
+    success?: string;
+  }>({});
+
+  useEffect(() => {
+    return () => {
+      previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    };
+  }, [previews]);
+
+  function updateSelectedFiles(files: File[]) {
+    previews.forEach((preview) => URL.revokeObjectURL(preview.url));
+    setPreviews(
+      files.map((file) => ({
+        name: file.name,
+        size: file.size,
+        url: URL.createObjectURL(file),
+      })),
+    );
+    setSelectedFiles(
+      files.length ? files.map((file) => file.name).join(", ") : "",
+    );
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    if (isUploading) {
+      return;
+    }
+
+    const files = Array.from(inputRef.current?.files ?? []);
+    const selected = purpose === "gallery" ? files : files.slice(0, 1);
+    const validationError = validateSelectedImages(
+      selected,
+      purpose,
+      existingGalleryCount,
+    );
+
+    if (validationError) {
+      setStatus({ error: validationError });
+      return;
+    }
+
+    setIsUploading(true);
+    setStatus({});
+
+    const supabase = createClient();
+    const uploadedObjects: Array<{
+      bucket: string;
+      mimeType: string;
+      objectPath: string;
+      sizeBytes: number;
+    }> = [];
+
+    try {
+      for (const file of selected) {
+        const prepared = await prepareInvitationImageUpload({
+          eventId,
+          fileName: file.name,
+          mimeType: file.type,
+          purpose,
+          sizeBytes: file.size,
+        });
+
+        if ("error" in prepared) {
+          throw new Error(prepared.error);
+        }
+
+        const { error } = await supabase.storage
+          .from(prepared.bucket)
+          .upload(prepared.objectPath, file, {
+            contentType: file.type,
+            upsert: false,
+          });
+
+        if (error) {
+          throw new Error("No pudimos subir la imagen a Storage.");
+        }
+
+        uploadedObjects.push({
+          bucket: prepared.bucket,
+          mimeType: file.type,
+          objectPath: prepared.objectPath,
+          sizeBytes: file.size,
+        });
+      }
+
+      const result = await finalizeInvitationImageUpload({
+        eventId,
+        purpose,
+        uploads: uploadedObjects.map(({ mimeType, objectPath, sizeBytes }) => ({
+          mimeType,
+          objectPath,
+          sizeBytes,
+        })),
+      });
+
+      if (result.error) {
+        throw new Error(result.error);
+      }
+
+      setStatus({ success: result.success ?? "Imagen cargada." });
+      setSelectedFiles("");
+      updateSelectedFiles([]);
+
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+
+      router.refresh();
+    } catch (error) {
+      if (uploadedObjects.length) {
+        await supabase.storage
+          .from(uploadedObjects[0].bucket)
+          .remove(uploadedObjects.map((upload) => upload.objectPath));
+      }
+
+      setStatus({
+        error:
+          error instanceof Error
+            ? error.message
+            : "No pudimos subir la imagen. Intentalo nuevamente.",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  }
 
   return (
-    <form action={formAction} className="grid w-full gap-2 sm:max-w-[22rem] sm:min-w-[18rem]">
+    <form
+      className="grid w-full gap-2 sm:max-w-[22rem] sm:min-w-[18rem]"
+      onSubmit={handleSubmit}
+    >
       <input name="eventId" type="hidden" value={eventId} />
       <input name="purpose" type="hidden" value={purpose} />
       <div className="grid gap-2">
@@ -206,13 +367,11 @@ function UploadImageForm({
           id={inputId}
           multiple={purpose === "gallery"}
           name="file"
+          ref={inputRef}
           onChange={(event) => {
             const files = Array.from(event.currentTarget.files ?? []);
-            setSelectedFiles(
-              files.length
-                ? files.map((file) => file.name).join(", ")
-                : "",
-            );
+            setStatus({});
+            updateSelectedFiles(purpose === "gallery" ? files : files.slice(0, 1));
           }}
           required
           type="file"
@@ -232,34 +391,51 @@ function UploadImageForm({
         </div>
       </div>
       <p className="text-xs leading-5 text-midnight-navy/55">
-        {allowedImageExtensionsLabel}. Maximo {maxImageSizeLabel}.
+        {allowedImageExtensionsLabel}. Maximo {maxImageSizeLabel} por imagen.
+        {purpose === "gallery"
+          ? ` Galeria: ${existingGalleryCount}/${maxGalleryImages}.`
+          : ""}
       </p>
-      <UploadSubmitButton label={buttonLabel} />
+      {previews.length ? (
+        <div className="grid gap-2">
+          {previews.map((preview) => (
+            <div
+              className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-midnight-navy/10 bg-porcelain p-2"
+              key={`${preview.name}-${preview.size}`}
+            >
+              <img
+                alt=""
+                className="size-14 rounded-xl object-cover"
+                src={preview.url}
+              />
+              <p className="min-w-0 text-xs font-semibold leading-5 text-midnight-navy/65">
+                <span className="block truncate text-midnight-navy">
+                  {preview.name}
+                </span>
+                {formatFileSize(preview.size)}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      <button
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition hover:bg-[#7D5F78] disabled:cursor-wait disabled:bg-muted-mauve/50"
+        disabled={isUploading}
+        type="submit"
+      >
+        <ImagePlus aria-hidden="true" className="size-4" />
+        {isUploading ? "Subiendo..." : buttonLabel}
+      </button>
       <p
         aria-live="polite"
         className={[
           "min-h-5 text-sm font-semibold",
-          state.error ? "text-[#8A3A3A]" : "text-[#24523D]",
+          status.error ? "text-[#8A3A3A]" : "text-[#24523D]",
         ].join(" ")}
       >
-        {state.error ?? state.success ?? ""}
+        {status.error ?? status.success ?? ""}
       </p>
     </form>
-  );
-}
-
-function UploadSubmitButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
-
-  return (
-    <button
-      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition hover:bg-[#7D5F78] disabled:cursor-wait disabled:bg-muted-mauve/50"
-      disabled={pending}
-      type="submit"
-    >
-      <ImagePlus aria-hidden="true" className="size-4" />
-      {pending ? "Subiendo..." : label}
-    </button>
   );
 }
 
@@ -465,4 +641,38 @@ function normalizeGalleryImages(content: WeddingInvitationContent) {
   return (content.galleryImages ?? [])
     .filter((image): image is GalleryItem => typeof image !== "string")
     .sort((first, second) => (first.order ?? 0) - (second.order ?? 0));
+}
+
+function validateSelectedImages(
+  files: File[],
+  purpose: UploadPurpose,
+  existingGalleryCount: number,
+) {
+  if (!files.length) {
+    return "Selecciona una imagen.";
+  }
+
+  if (files.some((file) => !allowedImageTypes.includes(file.type))) {
+    return "Usa solo imagenes JPG, PNG o WebP. HEIC aun no esta admitido.";
+  }
+
+  if (files.some((file) => file.size <= 0 || file.size > maxImageSizeBytes)) {
+    return "Cada imagen debe pesar 5 MB o menos.";
+  }
+
+  if (
+    purpose === "gallery" &&
+    existingGalleryCount + files.length > maxGalleryImages
+  ) {
+    return `La galeria admite hasta ${maxGalleryImages} fotos. Puedes agregar ${Math.max(
+      0,
+      maxGalleryImages - existingGalleryCount,
+    )}.`;
+  }
+
+  return null;
+}
+
+function formatFileSize(bytes: number) {
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }

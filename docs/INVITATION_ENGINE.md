@@ -10,6 +10,8 @@ Preview no longer merges demo family, story, gifts, places or photos into real i
 
 Invitation photos are stored as event-owned Supabase Storage objects. Draft content keeps stable references (`bucket`, `objectPath`, media `id`, order and focal point); render data resolves those references to short-lived URLs before passing them to `WeddingInvitation`. The renderer never needs to know Storage credentials, and published snapshots remain stable until the user explicitly republishes.
 
+Gallery rendering sorts images by their saved `order` before applying the public display limit of 10 images. The dashboard uploader uses the same limit so new uploads are rejected before transfer when they would be hidden by the renderer.
+
 Publication lifecycle:
 
 1. Onboarding creates a draft event.

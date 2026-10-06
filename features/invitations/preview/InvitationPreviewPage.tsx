@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, MailOpen, Palette, RotateCcw, X } from "lucide-react";
+import Link from "next/link";
+import { Check, MailOpen, Palette, RotateCcw, Send, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { InvitationThemeThumbnail } from "@/invitation/renderer/InvitationThemeThumbnail";
@@ -246,17 +247,24 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
             />
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold text-midnight-navy">
-                {currentTheme.name} · {currentPalette.name}
+                Vista previa · borrador
               </p>
               <p
                 aria-live="polite"
                 className="text-xs font-medium text-midnight-navy/52"
               >
+                {currentTheme.name} · {currentPalette.name} ·{" "}
                 {saveStatus === "saving" ? "Guardando..." : message}
               </p>
             </div>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
+            <Link
+              className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-midnight-navy/10 bg-white px-4 text-sm font-semibold text-midnight-navy transition-colors hover:border-muted-mauve/30 hover:text-muted-mauve focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
+              href="/admin/personal/invitacion/datos"
+            >
+              Volver a editar
+            </Link>
             <button
               className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-midnight-navy/10 bg-white px-4 text-sm font-semibold text-midnight-navy transition-colors hover:border-muted-mauve/30 hover:text-muted-mauve focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
               id="entry-preview-trigger"
@@ -273,8 +281,15 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
               type="button"
             >
               <Palette aria-hidden="true" className="size-4" />
-              Cambiar
+              Diseno
             </button>
+            <Link
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition-colors hover:bg-[#7D5F78] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve"
+              href="/admin/personal/invitacion/publicar"
+            >
+              <Send aria-hidden="true" className="size-4" />
+              Revisar
+            </Link>
           </div>
         </div>
       </div>
@@ -293,7 +308,7 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase text-muted-mauve">
-                  Personalizacion
+                  Diseno
                 </p>
                 <h2
                   className="mt-2 font-serif text-[2.35rem] font-semibold leading-none text-midnight-navy"

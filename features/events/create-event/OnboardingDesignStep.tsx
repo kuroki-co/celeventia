@@ -1,7 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useActionState, useState, useTransition } from "react";
 
 import { InvitationThemeThumbnail } from "@/invitation/renderer/InvitationThemeThumbnail";
 import {
@@ -13,11 +13,13 @@ import {
 import { changeInvitationDesign } from "@/features/invitations/change-design/action";
 import type { PersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
 
-import { completeOnboarding } from "./action";
+import { completeOnboarding, type CompleteOnboardingState } from "./action";
 
 type OnboardingDesignStepProps = {
   event: PersonalInvitationEvent;
 };
+
+const initialCompleteState: CompleteOnboardingState = {};
 
 export function OnboardingDesignStep({ event }: OnboardingDesignStepProps) {
   const [themeId, setThemeId] = useState<InvitationThemeId>(event.themeId);
@@ -26,6 +28,10 @@ export function OnboardingDesignStep({ event }: OnboardingDesignStepProps) {
   );
   const [message, setMessage] = useState("Elige una combinacion para empezar.");
   const [isPending, startTransition] = useTransition();
+  const [completeState, completeAction, isCompleting] = useActionState(
+    completeOnboarding,
+    initialCompleteState,
+  );
 
   function saveDesign(next: {
     themeId: InvitationThemeId;
@@ -125,13 +131,19 @@ export function OnboardingDesignStep({ event }: OnboardingDesignStepProps) {
         {isPending ? "Guardando..." : message}
       </p>
 
-      <form action={completeOnboarding}>
+      <form action={completeAction}>
         <input name="eventId" type="hidden" value={event.id} />
+        {completeState.error ? (
+          <p className="mb-3 rounded-2xl border border-[#8A3A3A]/20 bg-[#8A3A3A]/5 px-4 py-3 text-sm font-semibold text-[#8A3A3A]">
+            {completeState.error}
+          </p>
+        ) : null}
         <button
-          className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-muted-mauve px-5 text-sm font-semibold text-white transition hover:bg-[#7D5F78] sm:w-auto"
+          className="inline-flex min-h-12 w-full items-center justify-center rounded-2xl bg-muted-mauve px-5 text-sm font-semibold text-white transition hover:bg-[#7D5F78] disabled:cursor-wait disabled:bg-muted-mauve/55 sm:w-auto"
+          disabled={isPending || isCompleting}
           type="submit"
         >
-          Ver nuestra invitacion
+          {isCompleting ? "Finalizando..." : "Ver nuestra invitacion"}
         </button>
       </form>
     </div>

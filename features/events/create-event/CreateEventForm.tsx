@@ -11,7 +11,8 @@ export function CreateEventForm() {
     createPersonalEvent,
     initialState,
   );
-  const [hasDate, setHasDate] = useState("yes");
+  const values = state.values;
+  const [hasDate, setHasDate] = useState(values?.hasDate ?? "yes");
 
   return (
     <form action={formAction} className="mt-8 grid gap-5">
@@ -20,17 +21,21 @@ export function CreateEventForm() {
           Nombre visible de la primera persona
           <input
             className="min-h-12 rounded-2xl border border-midnight-navy/12 bg-white px-4 text-base font-medium outline-none transition focus:border-muted-mauve"
+            defaultValue={values?.partnerOneName}
             name="partnerOneName"
             required
           />
+          <FieldError message={state.fieldErrors?.partnerOneName} />
         </label>
         <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
           Nombre visible de la segunda persona
           <input
             className="min-h-12 rounded-2xl border border-midnight-navy/12 bg-white px-4 text-base font-medium outline-none transition focus:border-muted-mauve"
+            defaultValue={values?.partnerTwoName}
             name="partnerTwoName"
             required
           />
+          <FieldError message={state.fieldErrors?.partnerTwoName} />
         </label>
       </div>
 
@@ -66,20 +71,21 @@ export function CreateEventForm() {
           Fecha
           <input
             className="min-h-12 rounded-2xl border border-midnight-navy/12 bg-white px-4 text-base font-medium outline-none transition focus:border-muted-mauve disabled:bg-midnight-navy/5"
+            defaultValue={values?.eventDate}
             disabled={hasDate === "no"}
             name="eventDate"
             type="date"
           />
+          <FieldError message={state.fieldErrors?.eventDate} />
         </label>
-        <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
-          Zona horaria
-          <input
-            className="min-h-12 rounded-2xl border border-midnight-navy/12 bg-white px-4 text-base font-medium outline-none transition focus:border-muted-mauve"
-            defaultValue="America/Lima"
-            name="eventTimezone"
-          />
-        </label>
+        <div className="grid content-center gap-1 rounded-2xl border border-midnight-navy/10 bg-white px-4 py-3 text-sm font-semibold text-midnight-navy">
+          Horarios de Peru
+          <span className="text-sm font-medium text-midnight-navy/62">
+            Usaremos America/Lima para esta invitacion.
+          </span>
+        </div>
       </div>
+      <input name="eventTimezone" type="hidden" value="America/Lima" />
 
       <label className="flex items-center gap-3 text-sm font-semibold text-midnight-navy">
         <input
@@ -97,9 +103,11 @@ export function CreateEventForm() {
         Ciudad
         <input
           className="min-h-12 rounded-2xl border border-midnight-navy/12 bg-white px-4 text-base font-medium outline-none transition focus:border-muted-mauve"
+          defaultValue={values?.city}
           name="city"
           placeholder="Lima"
         />
+        <FieldError message={state.fieldErrors?.city} />
       </label>
 
       {state.error ? (
@@ -117,4 +125,12 @@ export function CreateEventForm() {
       </button>
     </form>
   );
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) {
+    return null;
+  }
+
+  return <span className="text-sm font-semibold text-[#8A3A3A]">{message}</span>;
 }

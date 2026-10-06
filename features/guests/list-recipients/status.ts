@@ -14,10 +14,10 @@ export function getRecipientStatusLabel(status: RecipientVisualStatus) {
   }
 
   if (status === "shared") {
-    return "Compartida";
+    return "WhatsApp abierto";
   }
 
-  return "No compartida";
+  return "Sin compartir";
 }
 
 export function getRecipientStatusMark(status: RecipientVisualStatus) {

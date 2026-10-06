@@ -44,6 +44,7 @@ export type SetupStep = {
   href: string;
   ctaLabel: string;
   detail?: string;
+  optional?: boolean;
 };
 
 export type DashboardData = {

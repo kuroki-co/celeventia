@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { DashboardSidebar } from "@/features/dashboard/main/DashboardSidebar";
 import { MobileDashboardNav } from "@/features/dashboard/main/MobileDashboardNav";
+import { ConfirmationsList } from "@/features/rsvp/list-responses/ConfirmationsList";
 import { getRsvpResponses } from "@/features/rsvp/list-responses/data";
 import { createClient } from "@/shared/supabase/server";
 
@@ -60,37 +61,7 @@ export default async function ConfirmationsPage() {
           </section>
 
           <section className="rounded-[22px] border border-midnight-navy/10 bg-white/82 p-5">
-            <div className="grid gap-2">
-              {data.responses.map((response) => (
-                <article
-                  className="rounded-[18px] border border-midnight-navy/10 bg-white px-4 py-4"
-                  key={response.id}
-                >
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
-                      <h2 className="text-sm font-semibold text-midnight-navy">
-                        {response.displayName}
-                      </h2>
-                      <p className="mt-1 text-sm text-midnight-navy/58">
-                        {response.response === "confirmed"
-                          ? `${response.attendeeCount} asistentes`
-                          : response.response === "declined"
-                            ? "No asistira"
-                            : "Pendiente"}
-                      </p>
-                    </div>
-                    <span className="text-xs font-semibold uppercase text-muted-mauve">
-                      {response.shareStatus}
-                    </span>
-                  </div>
-                  {response.attendeeNames.length ? (
-                    <p className="mt-3 text-sm leading-6 text-midnight-navy/65">
-                      {response.attendeeNames.join(", ")}
-                    </p>
-                  ) : null}
-                </article>
-              ))}
-            </div>
+            <ConfirmationsList responses={data.responses} />
           </section>
         </main>
       </div>
