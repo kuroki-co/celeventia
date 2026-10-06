@@ -8,7 +8,7 @@ import { createClient } from "@/shared/supabase/server";
 
 export const metadata: Metadata = {
   title: "Primer ingreso | Celeventia",
-  description: "Configuracion inicial de la invitacion de boda.",
+  description: "Configuración inicial de la invitación de boda.",
 };
 
 export default async function PersonalOnboardingPage() {
@@ -40,7 +40,7 @@ export default async function PersonalOnboardingPage() {
                 Empecemos con su boda
               </h1>
               <p className="mt-4 max-w-2xl text-sm leading-6 text-midnight-navy/62">
-                Solo necesitamos la identidad principal de la invitacion. Los
+                Solo necesitamos la identidad principal de la invitación. Los
                 detalles finos vendran despues en el editor.
               </p>
               <CreateEventForm />

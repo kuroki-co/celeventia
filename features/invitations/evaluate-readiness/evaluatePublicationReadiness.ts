@@ -57,7 +57,7 @@ export function evaluatePublicationReadiness(
     },
     {
       id: "main_content",
-      label: "Texto principal de la invitacion",
+      label: "Texto principal de la invitación",
       complete: hasText(event.mainInvitationMessage),
       href: "/admin/personal/invitacion/datos",
     },
@@ -75,7 +75,7 @@ export function evaluatePublicationReadiness(
     },
     {
       id: "slug",
-      label: "Enlace publico listo",
+      label: "Enlace público listo",
       complete: /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(event.slug),
       href: "/admin/personal/invitacion/publicar",
     },

@@ -47,7 +47,7 @@ export function OnboardingDesignStep({ event }: OnboardingDesignStepProps) {
         themeId: next.themeId,
       });
 
-      setMessage(result.error ?? result.success ?? "Diseno guardado.");
+      setMessage(result.error ?? result.success ?? "Diseño guardado.");
     });
   }
 
@@ -143,7 +143,7 @@ export function OnboardingDesignStep({ event }: OnboardingDesignStepProps) {
           disabled={isPending || isCompleting}
           type="submit"
         >
-          {isCompleting ? "Finalizando..." : "Ver nuestra invitacion"}
+          {isCompleting ? "Finalizando..." : "Ver nuestra invitación"}
         </button>
       </form>
     </div>

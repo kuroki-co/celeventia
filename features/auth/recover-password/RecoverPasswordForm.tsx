@@ -117,7 +117,7 @@ export function RecoverPasswordForm() {
         className="inline-flex min-h-10 items-center justify-center rounded-xl px-3 text-sm font-semibold text-midnight-navy/78 hover:text-muted-mauve"
         href="/admin/login"
       >
-        Volver a iniciar sesion
+        Volver a iniciar sesión
       </Link>
     </form>
   );

@@ -4,8 +4,12 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 import { getRequiredPersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
-import { stripTransientMediaUrls } from "@/features/media/media-content";
+import {
+  collectMediaReferences,
+  stripTransientMediaUrls,
+} from "@/features/media/media-content";
 import { createClient } from "@/shared/supabase/server";
+import type { WeddingInvitationContent } from "@/invitation/renderer/types";
 
 const schema = z.object({
   mediaId: z.string().uuid(),
@@ -15,7 +19,7 @@ export async function deleteInvitationImage(mediaId: string) {
   const parsed = schema.safeParse({ mediaId });
 
   if (!parsed.success) {
-    return { error: "Imagen invalida." };
+    return { error: "Imagen inválida." };
   }
 
   const supabase = await createClient();
@@ -46,22 +50,45 @@ export async function deleteInvitationImage(mediaId: string) {
       event.content.heroImage?.id === data.id
         ? null
         : event.content.heroImage,
+    locations: event.content.locations?.map((location) =>
+      typeof location.image === "object" && location.image?.id === data.id
+        ? {
+            ...location,
+            image: undefined,
+          }
+        : location,
+    ),
   };
 
-  const { error: updateError } = await supabase
+  const { data: updatedEvent, error: updateError } = await supabase
     .from("events")
     .update({
       draft_revision: event.draftRevision + 1,
       invitation_content: stripTransientMediaUrls(nextContent),
     })
-    .eq("id", event.id);
+    .eq("id", event.id)
+    .eq("draft_revision", event.draftRevision)
+    .select("id")
+    .maybeSingle();
 
-  if (updateError) {
+  if (updateError || !updatedEvent) {
+    if (!updatedEvent) {
+      return {
+        error:
+          "Hay cambios más recientes. Recarga la página antes de volver a quitar la imagen.",
+      };
+    }
+
     return { error: "No pudimos quitar la imagen del borrador." };
   }
 
-  if (data.is_published) {
+  if (
+    data.is_published ||
+    (await isReferencedByPublishedSnapshot(supabase, event.id, data.id))
+  ) {
     revalidatePath("/admin/personal/invitacion/fotografias");
+    revalidatePath("/admin/personal/invitacion/datos");
+    revalidatePath("/admin/personal/invitacion/contenido");
     revalidatePath("/admin/personal/invitacion/preview");
 
     return { success: "Imagen quitada del borrador." };
@@ -77,10 +104,49 @@ export async function deleteInvitationImage(mediaId: string) {
     return { error: "No pudimos eliminar los metadatos." };
   }
 
-  await supabase.storage.from(data.bucket).remove([data.object_path]);
+  const { error: storageError } = await supabase.storage
+    .from(data.bucket)
+    .remove([data.object_path]);
+
+  if (storageError) {
+    return {
+      error:
+        "La imagen se quitó del borrador, pero no pudimos eliminar el archivo de Storage.",
+    };
+  }
 
   revalidatePath("/admin/personal/invitacion/fotografias");
+  revalidatePath("/admin/personal/invitacion/datos");
+  revalidatePath("/admin/personal/invitacion/contenido");
   revalidatePath("/admin/personal/invitacion/preview");
 
   return { success: "Imagen eliminada." };
+}
+
+async function isReferencedByPublishedSnapshot(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  eventId: string,
+  mediaId: string,
+) {
+  const { data } = await supabase
+    .from("events")
+    .select("published_snapshot")
+    .eq("id", eventId)
+    .maybeSingle<{ published_snapshot: unknown }>();
+
+  const snapshot = data?.published_snapshot;
+
+  if (!snapshot || typeof snapshot !== "object" || Array.isArray(snapshot)) {
+    return false;
+  }
+
+  const content = (snapshot as { content?: unknown }).content;
+
+  if (!content || typeof content !== "object" || Array.isArray(content)) {
+    return false;
+  }
+
+  return collectMediaReferences(content as WeddingInvitationContent).some(
+    (media) => media.id === mediaId,
+  );
 }

@@ -8,7 +8,7 @@ import { createClient } from "@/shared/supabase/server";
 
 export const metadata: Metadata = {
   title: "Vista previa | Celeventia",
-  description: "Vista previa y personalizacion visual de la invitacion.",
+  description: "Vista previa y personalización visual de la invitación.",
 };
 
 export default async function AdminInvitationPreviewPage() {

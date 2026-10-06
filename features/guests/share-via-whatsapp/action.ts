@@ -25,7 +25,7 @@ export async function markRecipientShared(recipientId: string) {
 
   if (eventError || !event?.published_snapshot || event.status !== "published") {
     return {
-      error: "Publica la invitacion antes de compartir enlaces.",
+      error: "Publica la invitación antes de compartir enlaces.",
     };
   }
 

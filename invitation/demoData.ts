@@ -21,7 +21,7 @@ export const previewWeddingDemoContent: WeddingInvitationContent = {
     day: "14",
     weekday: "Sabado",
     message:
-      "Guarda esta fecha para acompaniarnos en el inicio de una historia que queremos celebrar cerca de quienes amamos.",
+      "Guarda esta fecha para acompañarnos en el inicio de una historia que queremos celebrar cerca de quienes amamos.",
   },
   locations: [
     {
@@ -47,7 +47,7 @@ export const previewWeddingDemoContent: WeddingInvitationContent = {
     {
       time: "5:00 p.m.",
       title: "Ceremonia",
-      description: "Nos encontramos para celebrar el si mas importante.",
+      description: "Nos encontramos para celebrar el sí más importante.",
     },
     {
       time: "7:30 p.m.",
@@ -76,7 +76,7 @@ export const previewWeddingDemoContent: WeddingInvitationContent = {
     {
       title: "Sobre",
       description:
-        "Habra un buzon en la recepcion para quienes prefieran entregar un sobre.",
+        "Habrá un buzón en la recepción para quienes prefieran entregar un sobre.",
     },
     {
       title: "Yape",

@@ -75,7 +75,7 @@ export function ConfirmationsList({ responses }: ConfirmationsListProps) {
           >
             <option value="all">Todas</option>
             <option value="confirmed">Confirmados</option>
-            <option value="declined">No asistiran</option>
+            <option value="declined">No asistirán</option>
             <option value="pending">Pendientes</option>
           </select>
         </label>
@@ -162,7 +162,7 @@ function getResponseLabel(response: RsvpResponseItem) {
   }
 
   if (response.response === "declined") {
-    return "No asistira";
+    return "No asistirá";
   }
 
   return "Pendiente de respuesta";

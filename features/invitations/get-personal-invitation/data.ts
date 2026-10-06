@@ -108,7 +108,7 @@ export async function getPersonalInvitationEvent(
     .single<EventRow>();
 
   if (error || !data) {
-    throw new Error(error?.message ?? "No se pudo cargar la invitacion.");
+    throw new Error(error?.message ?? "No se pudo cargar la invitación.");
   }
 
   return mapEvent(data);

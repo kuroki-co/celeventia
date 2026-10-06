@@ -52,8 +52,8 @@ function SubmitButton({
       {pending
         ? "Guardando..."
         : isPublished
-          ? "Actualizar invitacion publicada"
-          : "Publicar invitacion"}
+          ? "Actualizar invitación publicada"
+          : "Publicar invitación"}
     </button>
   );
 }

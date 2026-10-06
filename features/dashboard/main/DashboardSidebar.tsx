@@ -22,7 +22,7 @@ export function DashboardSidebar({
   dateLabel,
 }: DashboardSidebarProps) {
   return (
-    <aside className="hidden min-h-dvh w-[250px] shrink-0 border-r border-midnight-navy/10 bg-white px-5 py-7 lg:sticky lg:top-0 lg:flex lg:flex-col xl:w-[280px] xl:px-6">
+    <aside className="hidden w-[250px] shrink-0 border-r border-midnight-navy/10 bg-white px-5 py-7 lg:sticky lg:top-0 lg:flex lg:h-dvh lg:self-start lg:overflow-y-auto lg:flex-col xl:w-[280px] xl:px-6">
       <Link
         className="inline-flex w-fit rounded-xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-muted-mauve"
         href="/admin/personal"

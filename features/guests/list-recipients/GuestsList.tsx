@@ -1,7 +1,10 @@
 "use client";
 
+import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { useTransition } from "react";
 
+import { deleteRecipient } from "../delete-recipient/action";
 import { RecipientShareActions } from "../share-via-whatsapp/RecipientShareActions";
 import { UpdateRecipientForm } from "../update-recipient/UpdateRecipientForm";
 import {
@@ -60,7 +63,7 @@ export function GuestsList({ isPublished, recipients }: GuestsListProps) {
           <input
             className="min-h-11 rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition focus:border-muted-mauve"
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Nombre o telefono"
+            placeholder="Nombre o teléfono"
             value={query}
           />
         </label>
@@ -76,7 +79,7 @@ export function GuestsList({ isPublished, recipients }: GuestsListProps) {
             <option value="shared">WhatsApp abierto</option>
             <option value="opened">Invitacion abierta</option>
             <option value="confirmed">Confirmado</option>
-            <option value="declined">No asistira</option>
+            <option value="declined">No asistirá</option>
           </select>
         </label>
       </div>
@@ -132,7 +135,7 @@ function RecipientCard({
             {recipient.normalizedPhone ? (
               <span>{recipient.normalizedPhone}</span>
             ) : (
-              <span>Sin telefono</span>
+              <span>Sin teléfono</span>
             )}
             {recipient.attendeeCount ? (
               <span>
@@ -157,7 +160,10 @@ function RecipientCard({
               {recipient.attendeeNames.join(", ")}
             </p>
           ) : null}
-          <UpdateRecipientForm recipient={recipient} />
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <UpdateRecipientForm recipient={recipient} />
+            <DeleteRecipientButton recipient={recipient} />
+          </div>
         </div>
 
         <div className="lg:min-w-[360px]">
@@ -168,5 +174,56 @@ function RecipientCard({
         </div>
       </div>
     </article>
+  );
+}
+
+function DeleteRecipientButton({
+  recipient,
+}: {
+  recipient: InvitationRecipient;
+}) {
+  const [message, setMessage] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  function confirmAndDelete() {
+    const rsvpWarning = recipient.response
+      ? " También se eliminará su RSVP actual."
+      : "";
+    const confirmed = window.confirm(
+      `¿Eliminar a ${recipient.displayName}? Su enlace dejara de funcionar.${rsvpWarning}`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setMessage("Eliminando...");
+    startTransition(async () => {
+      const result = await deleteRecipient(recipient.id);
+      setMessage(result.error ?? result.success ?? "");
+    });
+  }
+
+  return (
+    <div className="grid gap-1">
+      <button
+        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-[#8A3A3A]/20 px-4 text-sm font-semibold text-[#8A3A3A] transition hover:bg-[#8A3A3A]/5 disabled:cursor-wait disabled:opacity-50"
+        disabled={isPending}
+        onClick={confirmAndDelete}
+        type="button"
+      >
+        <Trash2 aria-hidden="true" className="size-4" />
+        {isPending ? "Eliminando..." : "Eliminar"}
+      </button>
+      <p
+        aria-live="polite"
+        className={[
+          "min-h-5 text-xs font-semibold",
+          message.startsWith("No ") ? "text-[#8A3A3A]" : "text-[#24523D]",
+        ].join(" ")}
+      >
+        {message}
+      </p>
+    </div>
   );
 }

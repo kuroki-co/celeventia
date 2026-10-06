@@ -14,7 +14,7 @@ export const createEventSchema = z
     if (value.hasDate === "yes" && !value.eventDate) {
       context.addIssue({
         code: "custom",
-        message: "Selecciona la fecha o marca que aun no la tienen.",
+        message: "Selecciona la fecha o marca que aún no la tienen.",
         path: ["eventDate"],
       });
     }

@@ -9,6 +9,7 @@ const initialState: CreateRecipientState = {};
 
 export function CreateRecipientForm() {
   const [state, formAction] = useActionState(createRecipient, initialState);
+  const values = state.values;
 
   return (
     <form
@@ -18,56 +19,45 @@ export function CreateRecipientForm() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase text-muted-mauve">
-            Nuevo destinatario
+            Nuevo invitado
           </p>
           <h2 className="mt-2 font-serif text-[1.9rem] font-semibold leading-tight text-midnight-navy">
             Añadir invitado
           </h2>
         </div>
-        <p className="max-w-xl text-sm leading-5 text-midnight-navy/62">
+        <p className="max-w-xl text-sm leading-5 text-midnight-navy/65">
           Crea una invitación personalizada para una persona, pareja o familia.
         </p>
       </div>
 
       <div className="mt-5 grid gap-4 lg:grid-cols-[1.2fr_0.9fr_160px]">
-        <label className="block">
-          <span className="text-sm font-semibold text-midnight-navy">
-            Nombre de invitación
-          </span>
-          <input
-            className="mt-2 min-h-11 w-full rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition-colors placeholder:text-midnight-navy/35 focus:border-muted-mauve"
-            name="displayName"
-            placeholder="Familia Pérez"
-            required
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-semibold text-midnight-navy">
-            Teléfono
-          </span>
-          <input
-            className="mt-2 min-h-11 w-full rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition-colors placeholder:text-midnight-navy/35 focus:border-muted-mauve"
-            inputMode="tel"
-            name="phone"
-            placeholder="+51 987 654 321"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-semibold text-midnight-navy">
-            Pases
-          </span>
-          <input
-            className="mt-2 min-h-11 w-full rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition-colors focus:border-muted-mauve"
-            defaultValue={1}
-            min={1}
-            max={20}
-            name="maxGuests"
-            required
-            type="number"
-          />
-        </label>
+        <TextField
+          defaultValue={values?.displayName ?? ""}
+          error={state.fieldErrors?.displayName}
+          label="Nombre de invitación"
+          name="displayName"
+          placeholder="Familia Pérez"
+          required
+        />
+        <TextField
+          defaultValue={values?.phone ?? ""}
+          error={state.fieldErrors?.phone}
+          help="Usa un celular peruano de 9 dígitos o un número internacional con +."
+          inputMode="tel"
+          label="Teléfono (opcional)"
+          name="phone"
+          placeholder="+51 987 654 321"
+        />
+        <TextField
+          defaultValue={values?.maxGuests ?? "1"}
+          error={state.fieldErrors?.maxGuests}
+          label="Pases"
+          max={20}
+          min={1}
+          name="maxGuests"
+          required
+          type="number"
+        />
       </div>
 
       <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -83,6 +73,76 @@ export function CreateRecipientForm() {
         <SubmitButton />
       </div>
     </form>
+  );
+}
+
+function TextField({
+  defaultValue,
+  error,
+  help,
+  inputMode,
+  label,
+  max,
+  min,
+  name,
+  placeholder,
+  required = false,
+  type = "text",
+}: {
+  defaultValue: string;
+  error?: string;
+  help?: string;
+  inputMode?: "tel";
+  label: string;
+  max?: number;
+  min?: number;
+  name: "displayName" | "maxGuests" | "phone";
+  placeholder?: string;
+  required?: boolean;
+  type?: string;
+}) {
+  const helpId = `${name}-help`;
+  const errorId = `${name}-error`;
+  const describedBy = [help ? helpId : null, error ? errorId : null]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <label className="block">
+      <span className="text-sm font-semibold text-midnight-navy">{label}</span>
+      <input
+        aria-describedby={describedBy || undefined}
+        aria-invalid={Boolean(error)}
+        className="mt-2 min-h-11 w-full rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition-colors placeholder:text-midnight-navy/35 focus:border-muted-mauve aria-invalid:border-[#8A3A3A]"
+        defaultValue={defaultValue}
+        inputMode={inputMode}
+        key={`${name}-${defaultValue}`}
+        max={max}
+        min={min}
+        name={name}
+        placeholder={placeholder}
+        required={required}
+        type={type}
+      />
+      {help ? (
+        <span className="mt-1 block text-xs leading-5 text-midnight-navy/65" id={helpId}>
+          {help}
+        </span>
+      ) : null}
+      <FieldError id={errorId} message={error} />
+    </label>
+  );
+}
+
+function FieldError({ id, message }: { id: string; message?: string }) {
+  if (!message) {
+    return null;
+  }
+
+  return (
+    <span className="mt-1 block text-xs font-semibold text-[#8A3A3A]" id={id}>
+      {message}
+    </span>
   );
 }
 

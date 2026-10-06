@@ -73,6 +73,14 @@ export type GalleryImage =
       order?: number;
     };
 
+export type MediaImageReference = {
+  id?: string;
+  bucket?: string;
+  objectPath?: string;
+  url?: string;
+  alt?: string;
+};
+
 export type GiftMethod = {
   title: string;
   description: string;
@@ -97,7 +105,7 @@ export type InvitationLocation = {
   time?: string;
   address?: string;
   mapUrl?: string;
-  image?: string;
+  image?: MediaImageReference | string;
 };
 
 export type InvitationTimelineItem = {

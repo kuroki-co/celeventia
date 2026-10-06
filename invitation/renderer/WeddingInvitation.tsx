@@ -667,20 +667,21 @@ function LocationsSection({
       <div className="mx-auto mt-11 grid max-w-3xl gap-14 sm:mt-12 sm:gap-16">
         {locations.map((location) => {
           const mapUrl = getUsableMapUrl(location.mapUrl);
+          const imageUrl = getLocationImageUrl(location.image);
 
           return (
             <article
               className="text-center"
               key={`${location.kind}-${location.name}`}
             >
-              {location.image ? (
+              {imageUrl ? (
                 <img
                   alt=""
                   className={[
                     "h-64 w-full object-cover sm:h-80",
                     presentation.imageClassName,
                   ].join(" ")}
-                  src={location.image}
+                  src={imageUrl}
                 />
               ) : null}
               <div className={presentation.locationDetailsClassName}>
@@ -716,6 +717,14 @@ function LocationsSection({
       </div>
     </section>
   );
+}
+
+function getLocationImageUrl(image?: InvitationLocation["image"]) {
+  if (!image) {
+    return null;
+  }
+
+  return typeof image === "string" ? image : image.url ?? null;
 }
 
 function getUsableMapUrl(mapUrl?: string | null) {
@@ -855,6 +864,94 @@ function DressCodeSection({
     return null;
   }
 
+  if (isEditorialTheme(presentation)) {
+    const figureEntries = [
+      content.men
+        ? {
+            description: content.men,
+            illustration: "men" as const,
+            title: "Ellos",
+          }
+        : null,
+      content.women
+        ? {
+            description: content.women,
+            illustration: "women" as const,
+            title: "Ellas",
+          }
+        : null,
+    ].filter(
+      (
+        entry,
+      ): entry is {
+        description: string;
+        illustration: "men" | "women";
+        title: string;
+      } => Boolean(entry),
+    );
+    const textEntries = [
+      ["Recomendaciones", content.general],
+      ["Niños", content.children],
+    ].filter((entry): entry is [string, string] => Boolean(entry[1]));
+
+    return (
+      <section className={className}>
+        <SectionHeader
+          eyebrow="Dress Code"
+          presentation={presentation}
+          title={content.style ?? "Vestimenta"}
+        />
+
+        {figureEntries.length ? (
+          <div
+            className={[
+              "mx-auto mt-9 grid max-w-4xl gap-8",
+              figureEntries.length === 1 ? "md:max-w-md" : "md:grid-cols-2",
+            ].join(" ")}
+          >
+            {figureEntries.map((entry) => (
+              <DressCodeFigure
+                assetKey={presentation.assetKey}
+                description={entry.description}
+                illustration={entry.illustration}
+                key={entry.title}
+                title={entry.title}
+              />
+            ))}
+          </div>
+        ) : null}
+
+        {textEntries.length ? (
+          <div className="mx-auto mt-10 grid max-w-3xl gap-4 sm:grid-cols-2">
+            {textEntries.map(([label, text]) => (
+              <article
+                className={[
+                  "border border-[color:var(--inv-border)]/55 bg-[color:var(--inv-surface)]/55 px-5 py-6 text-center shadow-[0_18px_52px_rgba(16,42,67,0.06)]",
+                  presentation.assetKey === "terra" ? "rounded-t-[28px]" : "",
+                ].join(" ")}
+                key={label}
+              >
+                <h3 className="font-serif text-[1.85rem] font-normal leading-tight text-[color:var(--inv-primary)]">
+                  {label}
+                </h3>
+                <p className="mx-auto mt-3 max-w-sm text-sm leading-7 text-[color:var(--inv-muted)]">
+                  {text}
+                </p>
+              </article>
+            ))}
+          </div>
+        ) : null}
+
+        {content.avoidColors?.length ? (
+          <AvoidColorsPanel
+            colors={content.avoidColors}
+            presentation={presentation}
+          />
+        ) : null}
+      </section>
+    );
+  }
+
   if (isTraditional) {
     return (
       <section className={className}>
@@ -886,6 +983,18 @@ function DressCodeSection({
             />
           ) : null}
         </div>
+
+        {content.general ? (
+          <div className="mx-auto mt-10 max-w-xl text-center">
+            <ThemeOrnament compact presentation={presentation} />
+            <h3 className="font-serif text-[1.85rem] font-normal leading-tight text-[color:var(--inv-primary)]">
+              Recomendaciones
+            </h3>
+            <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-[color:var(--inv-muted)]">
+              {content.general}
+            </p>
+          </div>
+        ) : null}
 
         {content.children ? (
           <div className="mx-auto mt-10 max-w-xl text-center">
@@ -1060,6 +1169,48 @@ function formatAvoidColors(
   return colors?.map(getAvoidColorName).join(", ") ?? "";
 }
 
+function AvoidColorsPanel({
+  colors,
+  presentation,
+}: {
+  colors: NonNullable<WeddingInvitationContent["dressCode"]>["avoidColors"];
+  presentation: ThemePresentation;
+}) {
+  return (
+    <div
+      className={[
+        "mx-auto mt-10 max-w-2xl border border-[color:var(--inv-border)]/55 bg-[color:var(--inv-primary)]/[0.035] px-5 py-6 text-center",
+        presentation.assetKey === "terra" ? "rounded-t-[30px]" : "",
+      ].join(" ")}
+    >
+      <p className="text-[0.72rem] font-semibold uppercase tracking-[0.24em] text-[color:var(--inv-secondary)]">
+        Colores a evitar
+      </p>
+      <div className="mt-5 flex flex-wrap justify-center gap-4 sm:gap-6">
+        {colors?.map((colorName) => (
+          <div
+            className="flex min-w-20 flex-col items-center gap-2 text-center"
+            key={getAvoidColorName(colorName)}
+          >
+            <span
+              aria-hidden="true"
+              className="size-9 rounded-full border border-[color:var(--inv-border)] shadow-[0_8px_24px_rgba(16,42,67,0.08)]"
+              style={{ background: getAvoidColorSwatch(colorName) }}
+            />
+            <span className="text-xs leading-5 text-[color:var(--inv-muted)]">
+              {getAvoidColorName(colorName)}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function isEditorialTheme(presentation: ThemePresentation) {
+  return presentation.assetKey === "classic" || presentation.assetKey === "terra";
+}
+
 function RsvpSection({
   children,
   className,
@@ -1145,13 +1296,58 @@ function GiftsSection({
     return null;
   }
 
+  const giftOptions = getGiftOptions(gifts);
+
+  if (!giftOptions.length) {
+    return null;
+  }
+
+  if (isEditorialTheme(presentation)) {
+    const envelope = giftOptions.find((gift) => gift.kind === "envelope");
+    const otherGifts = giftOptions.filter((gift) => gift.kind !== "envelope");
+
+    return (
+      <section className={className}>
+        <SectionHeader
+          eyebrow="Regalos"
+          presentation={presentation}
+          text="Gracias por acompañarnos con tanto cariño."
+          title="Mesa de regalos"
+        />
+
+        <div
+          className={[
+            "mx-auto mt-9 max-w-4xl border border-[color:var(--inv-border)]/55 bg-[color:var(--inv-surface)]/58 px-5 py-8 shadow-[0_24px_70px_rgba(16,42,67,0.07)] sm:px-8 sm:py-10",
+            presentation.assetKey === "terra" ? "rounded-t-[44px]" : "",
+          ].join(" ")}
+        >
+          {envelope ? (
+            <div className="mx-auto max-w-xl border-b border-[color:var(--inv-border)]/45 pb-8">
+              <EnvelopeGift gift={envelope} />
+            </div>
+          ) : null}
+
+          {otherGifts.length ? (
+            <div
+              className={[
+                "grid gap-8",
+                envelope ? "mt-8" : "",
+                otherGifts.length === 1
+                  ? "mx-auto max-w-md"
+                  : "md:grid-cols-2 md:gap-10",
+              ].join(" ")}
+            >
+              {otherGifts.map((gift) => (
+                <EditorialGiftMethod gift={gift} key={gift.title} />
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </section>
+    );
+  }
+
   if (isTraditional) {
-    const giftOptions = getGiftOptions(gifts);
-
-    if (!giftOptions.length) {
-      return null;
-    }
-
     const envelope = giftOptions.find((gift) => gift.kind === "envelope");
     const financialGifts = giftOptions.filter(
       (gift) =>
@@ -1207,7 +1403,7 @@ function GiftsSection({
         text="Gracias por acompanarnos con tanto carino."
       />
       <div className={["mt-8 grid gap-4", isTraditional ? "" : "md:grid-cols-3"].join(" ")}>
-        {gifts.map((gift) => (
+        {giftOptions.map((gift) => (
           <div
             className="border border-[color:var(--inv-border)] bg-[color:var(--inv-surface)] p-5"
             key={gift.title}

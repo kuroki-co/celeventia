@@ -2,7 +2,7 @@ export const invitationThemes = [
   {
     id: "traditional",
     name: "Tradicional",
-    description: "Clasico, ceremonial y romantico.",
+    description: "Clásico, ceremonial y romántico.",
     frame: "traditional",
   },
   {
@@ -13,7 +13,7 @@ export const invitationThemes = [
   },
   {
     id: "classic",
-    name: "Clasico",
+    name: "Clásico",
     description: "Sobrio, centrado y atemporal.",
     frame: "classic",
   },
@@ -118,7 +118,7 @@ export const invitationPalettes = [
   },
   {
     id: "rojo_clasico",
-    name: "Rojo Clasico",
+    name: "Rojo Clásico",
     colors: {
       background: "#F9F4F3",
       surface: "#FFFFFF",

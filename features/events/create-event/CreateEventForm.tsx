@@ -79,9 +79,9 @@ export function CreateEventForm() {
           <FieldError message={state.fieldErrors?.eventDate} />
         </label>
         <div className="grid content-center gap-1 rounded-2xl border border-midnight-navy/10 bg-white px-4 py-3 text-sm font-semibold text-midnight-navy">
-          Horarios de Peru
+          Horarios de Perú
           <span className="text-sm font-medium text-midnight-navy/62">
-            Usaremos America/Lima para esta invitacion.
+            Usaremos America/Lima para esta invitación.
           </span>
         </div>
       </div>
@@ -121,7 +121,7 @@ export function CreateEventForm() {
         disabled={pending}
         type="submit"
       >
-        {pending ? "Creando..." : "Crear nuestra invitacion"}
+        {pending ? "Creando..." : "Crear nuestra invitación"}
       </button>
     </form>
   );

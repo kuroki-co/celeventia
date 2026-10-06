@@ -5,7 +5,12 @@ import { z } from "zod";
 
 import { getRequiredPersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
 import { stripTransientMediaUrls } from "@/features/media/media-content";
-import type { GalleryImage, HeroImage } from "@/invitation/renderer/types";
+import type {
+  GalleryImage,
+  HeroImage,
+  InvitationLocation,
+  MediaImageReference,
+} from "@/invitation/renderer/types";
 import { createClient } from "@/shared/supabase/server";
 
 import {
@@ -14,7 +19,7 @@ import {
   maxImageSizeBytes,
 } from "./limits";
 
-export type UploadPurpose = "gallery" | "invitation";
+export type UploadPurpose = "gallery" | "invitation" | "location";
 
 export type PreparedImageUpload = {
   bucket: string;
@@ -36,14 +41,16 @@ const allowedImageTypeSchema = z.enum(
 const prepareUploadSchema = z.object({
   eventId: z.string().uuid(),
   fileName: z.string().trim().min(1).max(240),
+  locationKind: z.enum(["Ceremonia", "Recepcion"]).optional(),
   mimeType: allowedImageTypeSchema,
-  purpose: z.enum(["invitation", "gallery"]),
+  purpose: z.enum(["invitation", "gallery", "location"]),
   sizeBytes: z.number().int().positive().max(maxImageSizeBytes),
 });
 
 const finalizeUploadSchema = z.object({
   eventId: z.string().uuid(),
-  purpose: z.enum(["invitation", "gallery"]),
+  locationKind: z.enum(["Ceremonia", "Recepcion"]).optional(),
+  purpose: z.enum(["invitation", "gallery", "location"]),
   uploads: z
     .array(
       z.object({
@@ -54,6 +61,22 @@ const finalizeUploadSchema = z.object({
     )
     .min(1)
     .max(maxGalleryImages),
+}).superRefine((value, context) => {
+  if (value.purpose === "location" && !value.locationKind) {
+    context.addIssue({
+      code: "custom",
+      message: "Selecciona el lugar de la imagen.",
+      path: ["locationKind"],
+    });
+  }
+
+  if (value.purpose === "location" && value.uploads.length !== 1) {
+    context.addIssue({
+      code: "custom",
+      message: "Sube una sola imagen para el lugar.",
+      path: ["uploads"],
+    });
+  }
 });
 
 type FinalizeUploadInput = z.input<typeof finalizeUploadSchema>;
@@ -61,6 +84,7 @@ type FinalizeUploadInput = z.input<typeof finalizeUploadSchema>;
 export async function prepareInvitationImageUpload(input: {
   eventId: string;
   fileName: string;
+  locationKind?: "Ceremonia" | "Recepcion";
   mimeType: string;
   purpose: UploadPurpose;
   sizeBytes: number;
@@ -69,6 +93,10 @@ export async function prepareInvitationImageUpload(input: {
 
   if (!parsed.success) {
     return { error: "Selecciona una imagen JPG, PNG o WebP de hasta 5 MB." };
+  }
+
+  if (parsed.data.purpose === "location" && !parsed.data.locationKind) {
+    return { error: "Selecciona el lugar de la imagen." };
   }
 
   const supabase = await createClient();
@@ -83,13 +111,13 @@ export async function prepareInvitationImageUpload(input: {
     getDraftGalleryCount(event.content.galleryImages) >= maxGalleryImages
   ) {
     return {
-      error: `La galeria admite hasta ${maxGalleryImages} fotos.`,
+      error: `La galería admite hasta ${maxGalleryImages} fotos.`,
     };
   }
 
   return {
     bucket,
-    objectPath: `events/${event.id}/${getPurposeFolder(parsed.data.purpose)}/${crypto.randomUUID()}.${getExtension(parsed.data.mimeType)}`,
+    objectPath: `events/${event.id}/${getPurposeFolder(parsed.data.purpose, parsed.data.locationKind)}/${crypto.randomUUID()}.${getExtension(parsed.data.mimeType)}`,
   };
 }
 
@@ -99,7 +127,7 @@ export async function finalizeInvitationImageUpload(
   const parsed = finalizeUploadSchema.safeParse(input);
 
   if (!parsed.success) {
-    return { error: "No pudimos confirmar la subida de imagenes." };
+    return { error: "No pudimos confirmar la subida de imágenes." };
   }
 
   const supabase = await createClient();
@@ -118,7 +146,7 @@ export async function finalizeInvitationImageUpload(
       await cleanupStorageObjects(supabase, parsed.data.uploads);
 
       return {
-        error: `La galeria admite hasta ${maxGalleryImages} fotos. Quita una antes de subir mas.`,
+        error: `La galería admite hasta ${maxGalleryImages} fotos. Quita una antes de subir más.`,
       };
     }
   }
@@ -128,6 +156,7 @@ export async function finalizeInvitationImageUpload(
       supabase,
       event.id,
       parsed.data.purpose,
+      parsed.data.locationKind,
       upload,
     );
 
@@ -147,7 +176,10 @@ export async function finalizeInvitationImageUpload(
         event_id: event.id,
         mime_type: upload.mimeType,
         object_path: upload.objectPath,
-        purpose: parsed.data.purpose,
+        purpose:
+          parsed.data.purpose === "location"
+            ? `location:${parsed.data.locationKind}`
+            : parsed.data.purpose,
         size_bytes: upload.sizeBytes,
         sort_order: nextOrder + index,
       })),
@@ -158,7 +190,7 @@ export async function finalizeInvitationImageUpload(
   if (insertError || !insertedMedia?.length) {
     await cleanupStorageObjects(supabase, parsed.data.uploads);
 
-    return { error: "La imagen subio, pero no pudimos guardar sus metadatos." };
+    return { error: "La imagen subió, pero no pudimos guardar sus metadatos." };
   }
 
   const mediaByPath = new Map(
@@ -181,21 +213,33 @@ export async function finalizeInvitationImageUpload(
             focalY: 50,
           } satisfies HeroImage,
         }
-      : {
+      : parsed.data.purpose === "gallery"
+        ? {
           ...event.content,
           galleryImages: [
             ...(event.content.galleryImages ?? []),
             ...uploadedMedia.map(
               (mediaReference, index): GalleryImage => ({
                 ...mediaReference,
-                alt: "Foto de la galeria",
+                alt: "Foto de la galería",
                 featured:
                   getDraftGalleryCount(event.content.galleryImages) + index < 4,
                 order: nextOrder + index,
               }),
             ),
           ],
-        };
+        }
+        : {
+            ...event.content,
+            locations: getLocationsWithImage(
+              event.content.locations,
+              parsed.data.locationKind ?? "Ceremonia",
+              {
+                ...uploadedMedia[0],
+                alt: `${parsed.data.locationKind ?? "Lugar"} de la boda`,
+              },
+            ),
+          };
 
   const { data: updatedEvent, error: updateError } = await supabase
     .from("events")
@@ -213,12 +257,14 @@ export async function finalizeInvitationImageUpload(
 
     return {
       error: updateError
-        ? "La imagen subio, pero no pudimos asociarla al borrador."
-        : "Hay cambios mas recientes. Recarga la pagina antes de volver a subir fotos.",
+        ? "La imagen subió, pero no pudimos asociarla al borrador."
+        : "Hay cambios más recientes. Recarga la página antes de volver a subir fotos.",
     };
   }
 
   revalidatePath("/admin/personal/invitacion/fotografias");
+  revalidatePath("/admin/personal/invitacion/datos");
+  revalidatePath("/admin/personal/invitacion/contenido");
   revalidatePath("/admin/personal/invitacion/preview");
 
   return {
@@ -226,7 +272,7 @@ export async function finalizeInvitationImageUpload(
     success:
       parsed.data.uploads.length === 1
         ? "Imagen cargada."
-        : "Imagenes cargadas.",
+        : "Imágenes cargadas.",
   };
 }
 
@@ -248,8 +294,19 @@ function getNextGalleryOrder(images: GalleryImage[] | undefined) {
   return orders.length ? Math.max(...orders) + 1 : 0;
 }
 
-function getPurposeFolder(purpose: UploadPurpose) {
-  return purpose === "invitation" ? "invitation" : "gallery";
+function getPurposeFolder(
+  purpose: UploadPurpose,
+  locationKind?: "Ceremonia" | "Recepcion",
+) {
+  if (purpose === "invitation") {
+    return "invitation";
+  }
+
+  if (purpose === "location") {
+    return `locations/${locationKind === "Recepcion" ? "reception" : "ceremony"}`;
+  }
+
+  return "gallery";
 }
 
 function getExtension(mimeType: string) {
@@ -268,13 +325,14 @@ async function verifyUploadedObject(
   supabase: Awaited<ReturnType<typeof createClient>>,
   eventId: string,
   purpose: UploadPurpose,
+  locationKind: "Ceremonia" | "Recepcion" | undefined,
   upload: {
     mimeType: string;
     objectPath: string;
     sizeBytes: number;
   },
 ) {
-  const folder = `events/${eventId}/${getPurposeFolder(purpose)}`;
+  const folder = `events/${eventId}/${getPurposeFolder(purpose, locationKind)}`;
   const expectedPrefix = `${folder}/`;
 
   if (!upload.objectPath.startsWith(expectedPrefix)) {
@@ -284,7 +342,7 @@ async function verifyUploadedObject(
   const fileName = upload.objectPath.slice(expectedPrefix.length);
 
   if (!fileName || fileName.includes("/")) {
-    return "La ruta de Storage no es valida.";
+    return "La ruta de Storage no es válida.";
   }
 
   const { data, error } = await supabase.storage.from(bucket).list(folder, {
@@ -317,6 +375,31 @@ async function verifyUploadedObject(
   }
 
   return null;
+}
+
+function getLocationsWithImage(
+  locations: InvitationLocation[] | undefined,
+  locationKind: "Ceremonia" | "Recepcion",
+  image: MediaImageReference,
+): InvitationLocation[] {
+  const existingLocations = locations?.length
+    ? locations
+    : [{ kind: locationKind, name: "", enabled: true }];
+  const hasTarget = existingLocations.some(
+    (location) => location.kind === locationKind,
+  );
+  const nextLocations = hasTarget
+    ? existingLocations
+    : [...existingLocations, { kind: locationKind, name: "", enabled: true }];
+
+  return nextLocations.map((location) =>
+    location.kind === locationKind
+      ? {
+          ...location,
+          image,
+        }
+      : location,
+  );
 }
 
 async function cleanupStorageObjects(

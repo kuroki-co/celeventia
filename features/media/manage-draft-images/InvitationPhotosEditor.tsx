@@ -80,6 +80,18 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
   const [isPending, startTransition] = useTransition();
 
   function deleteImage(mediaId: string) {
+    if (isPending) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      "¿Quitar esta foto del borrador? Si ya fue publicada, seguirá visible hasta que vuelvas a publicar.",
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
     setMessage("Quitando imagen...");
     startTransition(async () => {
       const result = await deleteInvitationImage(mediaId);
@@ -88,6 +100,10 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
   }
 
   function moveImage(mediaId: string, direction: "up" | "down") {
+    if (isPending) {
+      return;
+    }
+
     const currentIndex = galleryImages.findIndex((image) => image.id === mediaId);
 
     if (currentIndex < 0) {
@@ -117,7 +133,7 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
     <div className="grid gap-5">
       <section className="grid gap-5">
         <PhotoSectionHeader
-          description="Aparece en el hero y en la entrada de la invitacion."
+          description="Aparece en el hero y en la entrada de la invitación."
           status={heroImage ? "Portada cargada" : "Sin portada"}
           title="Foto de portada"
         />
@@ -130,6 +146,7 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
               focalX={heroImage.focalX ?? 50}
               focalY={heroImage.focalY ?? 50}
               imageUrl={heroImage.url}
+              isBusy={isPending}
               key={heroImage.id ?? heroImage.objectPath ?? "hero"}
               mediaId={heroImage.id}
               onDelete={deleteImage}
@@ -145,7 +162,7 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
                     Aun no hay foto de portada en el borrador.
                   </p>
                   <p className="text-xs leading-5 text-midnight-navy/55">
-                    Sube una imagen horizontal o vertical; luego podras ajustar
+                    Sube una imagen horizontal o vertical; luego podrás ajustar
                     el encuadre.
                   </p>
                 </div>
@@ -174,7 +191,7 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
 
         <UploadImageForm
           buttonLabel="Agregar fotos"
-          dropzoneTitle="Agregar a la galeria"
+          dropzoneTitle="Agregar a la galería"
           eventId={event.id}
           existingGalleryCount={galleryImages.length}
           purpose="gallery"
@@ -189,6 +206,7 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
                 index={index}
                 isFirst={index === 0}
                 isLast={index === galleryImages.length - 1}
+                isBusy={isPending}
                 key={image.id ?? image.objectPath ?? index}
                 onDelete={deleteImage}
                 onMove={moveImage}
@@ -196,7 +214,7 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
             ))}
           </div>
         ) : (
-          <EmptyPhotoState text="Aun no hay fotos en la galeria del borrador." />
+          <EmptyPhotoState text="Aún no hay fotos en la galería del borrador." />
         )}
       </section>
 
@@ -423,7 +441,7 @@ function UploadImageForm({
         error:
           error instanceof Error
             ? error.message
-            : "No pudimos subir la imagen. Intentalo nuevamente.",
+            : "No pudimos subir la imagen. Inténtalo nuevamente.",
       });
     } finally {
       setIsUploading(false);
@@ -473,7 +491,7 @@ function UploadImageForm({
           <span className="text-xs leading-5 text-midnight-navy/55">
             {isGalleryFull
               ? `Ya tienes ${maxGalleryImages} fotos en el borrador.`
-              : "Arrastra una imagen aqui o elige una de tu dispositivo."}
+              : "Arrastra una imagen aquí o elige una de tu dispositivo."}
           </span>
         </span>
         <span className="inline-flex min-h-9 items-center rounded-full border border-muted-mauve/20 bg-white px-4 text-xs font-semibold text-muted-mauve">
@@ -482,7 +500,7 @@ function UploadImageForm({
       </label>
 
       <p id={helpId} className="text-xs leading-5 text-midnight-navy/55">
-        {allowedImageExtensionsLabel}. Maximo {maxImageSizeLabel} por imagen.
+        {allowedImageExtensionsLabel}. Máximo {maxImageSizeLabel} por imagen.
         {purpose === "gallery"
           ? ` Galeria: ${existingGalleryCount}/${maxGalleryImages}.`
           : ""}
@@ -499,7 +517,7 @@ function UploadImageForm({
               onClick={clearSelection}
               type="button"
             >
-              <span className="sr-only">Quitar seleccion</span>
+              <span className="sr-only">Quitar selección</span>
               <X aria-hidden="true" className="size-4" />
             </button>
           </div>
@@ -566,6 +584,7 @@ function HeroCropForm({
   focalX,
   focalY,
   imageUrl,
+  isBusy,
   mediaId,
   onDelete,
 }: {
@@ -574,6 +593,7 @@ function HeroCropForm({
   focalX: number;
   focalY: number;
   imageUrl: string;
+  isBusy: boolean;
   mediaId?: string;
   onDelete: (mediaId: string) => void;
 }) {
@@ -741,6 +761,7 @@ function HeroCropForm({
         {mediaId ? (
           <button
             className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-[#8A3A3A]/20 px-4 text-sm font-semibold text-[#8A3A3A] transition hover:bg-[#8A3A3A]/5 sm:w-fit"
+            disabled={isBusy}
             onClick={() => onDelete(mediaId)}
             type="button"
           >
@@ -759,6 +780,7 @@ function GalleryImageTile({
   index,
   isFirst,
   isLast,
+  isBusy,
   onDelete,
   onMove,
 }: {
@@ -767,6 +789,7 @@ function GalleryImageTile({
   index: number;
   isFirst: boolean;
   isLast: boolean;
+  isBusy: boolean;
   onDelete: (mediaId: string) => void;
   onMove: (mediaId: string, direction: "down" | "up") => void;
 }) {
@@ -794,14 +817,14 @@ function GalleryImageTile({
         </span>
         <div className="absolute right-2 top-2 flex gap-1 rounded-full bg-white/92 p-1 shadow-sm">
           <IconButton
-            disabled={isFirst || !image.id}
+            disabled={isBusy || isFirst || !image.id}
             label="Subir foto en el orden"
             onClick={() => image.id && onMove(image.id, "up")}
           >
             <ArrowUp aria-hidden="true" className="size-4" />
           </IconButton>
           <IconButton
-            disabled={isLast || !image.id}
+            disabled={isBusy || isLast || !image.id}
             label="Bajar foto en el orden"
             onClick={() => image.id && onMove(image.id, "down")}
           >
@@ -809,7 +832,7 @@ function GalleryImageTile({
           </IconButton>
           <IconButton
             danger
-            disabled={!image.id}
+            disabled={isBusy || !image.id}
             label="Eliminar foto del borrador"
             onClick={() => image.id && onDelete(image.id)}
           >
@@ -943,7 +966,7 @@ function validateSelectedImages(
   }
 
   if (files.some((file) => !allowedImageTypes.includes(file.type))) {
-    return "Usa solo imagenes JPG, PNG o WebP. HEIC aun no esta admitido.";
+    return "Usa solo imágenes JPG, PNG o WebP. HEIC aún no está admitido.";
   }
 
   if (files.some((file) => file.size <= 0 || file.size > maxImageSizeBytes)) {
@@ -954,7 +977,7 @@ function validateSelectedImages(
     purpose === "gallery" &&
     existingGalleryCount + files.length > maxGalleryImages
   ) {
-    return `La galeria admite hasta ${maxGalleryImages} fotos. Puedes agregar ${Math.max(
+    return `La galería admite hasta ${maxGalleryImages} fotos. Puedes agregar ${Math.max(
       0,
       maxGalleryImages - existingGalleryCount,
     )}.`;

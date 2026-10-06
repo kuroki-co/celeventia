@@ -87,7 +87,7 @@ export async function reorderGalleryImages(
   });
 
   if (!parsed.success) {
-    return { error: "No pudimos ordenar la galeria." };
+    return { error: "No pudimos ordenar la galería." };
   }
 
   const orderById = new Map(
@@ -128,7 +128,7 @@ export async function updateGalleryImageMeta(
   });
 
   if (!parsed.success) {
-    return { error: "Revisa la descripcion." };
+    return { error: "Revisa la descripción." };
   }
 
   const supabase = await createClient();
@@ -147,7 +147,7 @@ export async function updateGalleryImageMeta(
 
       return {
         ...image,
-        alt: parsed.data.alt || "Foto de la galeria",
+        alt: parsed.data.alt || "Foto de la galería",
       };
     }),
   };
@@ -166,15 +166,22 @@ async function updateDraftContent(
   event: Awaited<ReturnType<typeof getRequiredPersonalInvitationEvent>>,
   content: WeddingInvitationContent,
 ) {
-  const { error } = await supabase
+  const { data, error } = await supabase
     .from("events")
     .update({
       draft_revision: event.draftRevision + 1,
       invitation_content: stripTransientMediaUrls(content),
     })
-    .eq("id", event.id);
+    .eq("id", event.id)
+    .eq("draft_revision", event.draftRevision)
+    .select("id")
+    .maybeSingle();
 
-  if (error) {
+  if (error || !data) {
+    if (!data) {
+      return "Hay cambios más recientes. Recarga la página antes de volver a guardar.";
+    }
+
     return "No pudimos guardar los cambios.";
   }
 

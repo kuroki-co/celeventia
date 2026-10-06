@@ -37,7 +37,7 @@ export function CopyPublicUrlButton({
         target="_blank"
       >
         <ExternalLink aria-hidden="true" className="size-4" />
-        Ver invitacion
+        Ver invitación
       </Link>
       <span aria-live="polite" className="text-sm font-semibold text-[#24523D]">
         {message}

@@ -64,7 +64,7 @@ export async function createPersonalEvent(
       error:
         error.message === "PARTNER_NAMES_REQUIRED"
           ? "Ingresa ambos nombres."
-          : "No pudimos crear la invitacion. Intentalo nuevamente.",
+          : "No pudimos crear la invitación. Inténtalo nuevamente.",
       values,
     };
   }
@@ -83,7 +83,7 @@ export async function completeOnboarding(
   });
 
   if (!parsed.success) {
-    return { error: "No pudimos confirmar tu invitacion." };
+    return { error: "No pudimos confirmar tu invitación." };
   }
 
   const supabase = await createClient();
@@ -104,7 +104,7 @@ export async function completeOnboarding(
 
   if (error || !data) {
     return {
-      error: "No pudimos finalizar el primer ingreso. Intentalo nuevamente.",
+      error: "No pudimos finalizar el primer ingreso. Inténtalo nuevamente.",
     };
   }
 

@@ -29,17 +29,17 @@ export default async function Home() {
           Tu historia, en un solo lugar.
         </p>
         <h1 className="mt-6 max-w-2xl font-serif text-[2.75rem] font-semibold leading-none text-midnight-navy sm:text-[4rem]">
-          Prepara tu invitacion de boda con calma
+          Prepara tu invitación de boda con calma
         </h1>
         <p className="mt-5 max-w-xl text-base leading-8 text-midnight-navy/70">
-          Accede a tu espacio privado para completar la invitacion, preparar
+          Accede a tu espacio privado para completar la invitación, preparar
           invitados y revisar confirmaciones.
         </p>
         <Link
           className="mt-8 inline-flex min-h-12 items-center justify-center rounded-2xl bg-muted-mauve px-6 text-sm font-semibold text-white transition hover:bg-[#7D5F78]"
           href="/admin/login"
         >
-          Iniciar sesion
+          Iniciar sesión
         </Link>
       </section>
     </main>

@@ -6,6 +6,11 @@ import { z } from "zod";
 
 import { createClient } from "@/shared/supabase/server";
 
+import {
+  getRecipientFieldErrors,
+  getRecipientFormValues,
+  type RecipientFormValues,
+} from "../recipient-form";
 import { normalizePhone } from "../create-recipient/phone";
 import { createRecipientSchema } from "../create-recipient/schema";
 import { getRequiredPersonalEventId } from "../list-recipients/data";
@@ -16,7 +21,9 @@ const updateRecipientSchema = createRecipientSchema.extend({
 
 export type UpdateRecipientState = {
   error?: string;
+  fieldErrors?: Partial<Record<keyof RecipientFormValues, string>>;
   success?: string;
+  values?: RecipientFormValues;
 };
 
 type RecipientWithRsvp = {
@@ -37,16 +44,19 @@ export async function updateRecipient(
   _prevState: UpdateRecipientState,
   formData: FormData,
 ): Promise<UpdateRecipientState> {
+  const values = getRecipientFormValues(formData);
   const parsed = updateRecipientSchema.safeParse({
-    displayName: formData.get("displayName"),
-    maxGuests: formData.get("maxGuests"),
-    phone: formData.get("phone"),
+    displayName: values.displayName,
+    maxGuests: values.maxGuests,
+    phone: values.phone,
     recipientId: formData.get("recipientId"),
   });
 
   if (!parsed.success) {
     return {
       error: parsed.error.issues[0]?.message ?? "Revisa los datos.",
+      fieldErrors: getRecipientFieldErrors(parsed.error.flatten().fieldErrors),
+      values,
     };
   }
 
@@ -70,6 +80,7 @@ export async function updateRecipient(
   if (recipientError || !recipient) {
     return {
       error: "No pudimos encontrar ese invitado en tu boda.",
+      values,
     };
   }
 
@@ -83,6 +94,10 @@ export async function updateRecipient(
   if (parsed.data.maxGuests < confirmedGuests) {
     return {
       error: `No puedes bajar a ${parsed.data.maxGuests} pases porque ya hay ${confirmedGuests} asistentes confirmados.`,
+      fieldErrors: {
+        maxGuests: "Ajusta los pases al menos a la cantidad ya confirmada.",
+      },
+      values,
     };
   }
 
@@ -100,7 +115,8 @@ export async function updateRecipient(
 
   if (error) {
     return {
-      error: "No pudimos actualizar el invitado. Intentalo nuevamente.",
+      error: "No pudimos actualizar el invitado. Inténtalo nuevamente.",
+      values,
     };
   }
 

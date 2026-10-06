@@ -13,8 +13,8 @@ import { getPersonalInvitationEvent } from "@/features/invitations/get-personal-
 import { createClient } from "@/shared/supabase/server";
 
 export const metadata: Metadata = {
-  title: "Publicacion | Celeventia",
-  description: "Checklist de publicacion de la invitacion.",
+  title: "Publicación | Celeventia",
+  description: "Checklist de publicación de la invitación.",
 };
 
 export default async function AdminInvitationPublishPage() {
@@ -57,16 +57,16 @@ export default async function AdminInvitationPublishPage() {
         <main className="mx-auto flex w-full max-w-[1120px] flex-col gap-4 px-4 py-4 sm:px-6 sm:py-5 lg:px-7 lg:py-6">
           <section className="rounded-[22px] border border-midnight-navy/10 bg-white px-5 py-5 shadow-[0_14px_42px_rgba(16,42,67,0.035)] sm:px-6">
             <p className="text-xs font-semibold uppercase text-muted-mauve">
-              Publicacion
+              Publicación
             </p>
             <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <h1 className="font-serif text-[2.45rem] font-semibold leading-none text-midnight-navy sm:text-[3rem]">
-                  Publica tu invitacion
+                  Publica tu invitación
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-midnight-navy/62">
-                  Revisa los requisitos minimos antes de activar el enlace
-                  publico y los envios por WhatsApp.
+                  Revisa los requisitos mínimos antes de activar el enlace
+                  público y los envíos por WhatsApp.
                 </p>
               </div>
               <Link
@@ -129,7 +129,7 @@ export default async function AdminInvitationPublishPage() {
             {isPublished ? (
               <div className="mt-6 rounded-[18px] border border-[#24523D]/15 bg-[#24523D]/5 p-4">
                 <p className="text-sm font-semibold text-[#24523D]">
-                  Tu invitacion ya esta publicada.
+                  Tu invitación ya está publicada.
                 </p>
                 <p className="mt-2 break-all text-sm leading-6 text-midnight-navy/62">
                   {publicUrl}
@@ -141,7 +141,7 @@ export default async function AdminInvitationPublishPage() {
                 />
                 {event.publishedRevision !== event.draftRevision ? (
                   <p className="mt-3 text-sm font-semibold text-muted-mauve">
-                    Hay cambios sin publicar. Actualizar invitacion aplica el
+                    Hay cambios sin publicar. Actualizar invitación aplica el
                     borrador al mismo enlace.
                   </p>
                 ) : null}

@@ -8,12 +8,12 @@ const optionalText = z
 
 const optionalDate = optionalText.refine(
   (value) => !value || isRealDate(value),
-  "Ingresa una fecha valida.",
+  "Ingresa una fecha válida.",
 );
 
 const optionalTime = optionalText.refine(
   (value) => !value || /^([01]\d|2[0-3]):[0-5]\d$/.test(value),
-  "Ingresa una hora valida.",
+  "Ingresa una hora válida.",
 );
 
 const optionalUrl = optionalText.refine((value) => {
@@ -38,7 +38,7 @@ export const updateWeddingDetailsSchema = z.object({
   eventDate: optionalDate,
   eventTimezone: z
     .enum(["America/Lima"], {
-      message: "Selecciona una zona horaria valida.",
+      message: "Selecciona una zona horaria válida.",
     })
     .default("America/Lima"),
   city: optionalText,

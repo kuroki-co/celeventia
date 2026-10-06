@@ -1,7 +1,7 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type EntryFrame = "traditional" | "ornate" | "classic" | "organic" | "minimal";
@@ -12,6 +12,7 @@ type EntryRecipient = {
 } | null;
 
 type EntryImage = {
+  cropZoom: number;
   objectPosition: string;
   src: string | null;
 };
@@ -146,9 +147,16 @@ function EntryOverlay({
   const closePreviewEntry = useCallback(() => {
     onDismissEntry();
     window.setTimeout(() => {
-      document.getElementById("entry-preview-trigger")?.focus();
+      const trigger = document.getElementById("entry-preview-trigger");
+
+      if (trigger) {
+        trigger.focus();
+        return;
+      }
+
+      focusInvitation();
     }, 0);
-  }, [onDismissEntry]);
+  }, [focusInvitation, onDismissEntry]);
 
   const enterInvitation = useCallback(() => {
     onDismissEntry();
@@ -424,7 +432,7 @@ function VersallesEntry({
         <div className="relative mt-14 aspect-[818/501] w-full max-w-[34rem] sm:mt-16">
           <PaperLetter
             copy={copy}
-            image={{ objectPosition: "center center", src: null }}
+            image={{ cropZoom: 1, objectPosition: "center center", src: null }}
             isVisible={isCardVisible}
             variant="ornate"
           />
@@ -514,7 +522,7 @@ function TerraEntry({
                   alt=""
                   className="aspect-[4/5] w-full object-cover"
                   src={image.src}
-                  style={{ objectPosition: image.objectPosition }}
+                  style={getEntryImageStyle(image)}
                 />
               ) : (
                 <div className="grid aspect-[4/5] place-items-center bg-[color:var(--inv-bg)] font-serif text-4xl text-[color:var(--inv-primary)]">
@@ -589,7 +597,7 @@ function TraditionalEntry({
         <div className="relative mx-auto mt-14 w-full max-w-[31rem] sm:mt-16">
           <PaperLetter
             copy={copy}
-            image={{ objectPosition: "center center", src: null }}
+            image={{ cropZoom: 1, objectPosition: "center center", src: null }}
             isVisible={isCardVisible}
             variant="traditional"
           />
@@ -656,7 +664,7 @@ function MinimalEntry({
         <div className="relative mx-auto mt-14 w-full max-w-[30rem] sm:mt-16">
           <PaperLetter
             copy={copy}
-            image={{ objectPosition: "center center", src: null }}
+            image={{ cropZoom: 1, objectPosition: "center center", src: null }}
             isVisible={isCardVisible}
             variant="minimal"
           />
@@ -721,7 +729,7 @@ function PaperLetter({
           alt=""
           className="mx-auto mt-4 aspect-[5/4] w-full max-w-[12rem] object-cover"
           src={image.src ?? ""}
-          style={{ objectPosition: image.objectPosition }}
+          style={getEntryImageStyle(image)}
         />
       ) : null}
       <p className="mt-3 text-xs font-semibold uppercase tracking-[0.16em] text-[color:var(--inv-muted)]">
@@ -729,6 +737,14 @@ function PaperLetter({
       </p>
     </div>
   );
+}
+
+function getEntryImageStyle(image: EntryImage): CSSProperties {
+  return {
+    objectPosition: image.objectPosition,
+    transform: image.cropZoom > 1 ? `scale(${image.cropZoom})` : undefined,
+    transformOrigin: image.objectPosition,
+  };
 }
 
 function SimpleEnvelope({

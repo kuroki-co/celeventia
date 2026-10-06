@@ -112,7 +112,7 @@ export function PublicRsvpForm({ data, slug, token }: PublicRsvpFormProps) {
         </p>
       ) : null}
       <p className="mb-5 text-center text-sm font-semibold text-[color:var(--inv-text)]">
-        Esta invitacion incluye {maxGuests}{" "}
+        Esta invitación incluye {maxGuests}{" "}
         {maxGuests === 1 ? "pase" : "pases"}.
       </p>
 

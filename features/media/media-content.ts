@@ -1,6 +1,7 @@
 import type { createClient } from "@/shared/supabase/server";
 import type {
   GalleryImage,
+  InvitationLocation,
   WeddingInvitationContent,
 } from "@/invitation/renderer/types";
 
@@ -21,6 +22,7 @@ export function stripTransientMediaUrls(
     ...content,
     galleryImages: content.galleryImages?.map(stripGalleryImageUrl),
     heroImage: stripHeroImageUrl(content.heroImage),
+    locations: content.locations?.map(stripLocationImageUrl),
   };
 }
 
@@ -49,6 +51,9 @@ export async function resolveInvitationMediaUrls(
       ?.map((image) => resolveGalleryImageUrl(image, signedUrls))
       .filter((image): image is GalleryImage => Boolean(image)),
     heroImage: resolveHeroImageUrl(content.heroImage, signedUrls),
+    locations: content.locations?.map((location) =>
+      resolveLocationImageUrl(location, signedUrls),
+    ),
   };
 }
 
@@ -62,6 +67,14 @@ export function collectMediaReferences(content: WeddingInvitationContent) {
 
   for (const image of content.galleryImages ?? []) {
     const reference = getGalleryReference(image);
+
+    if (reference) {
+      references.push(reference);
+    }
+  }
+
+  for (const location of content.locations ?? []) {
+    const reference = getLocationImageReference(location);
 
     if (reference) {
       references.push(reference);
@@ -129,6 +142,20 @@ function stripGalleryImageUrl(image: GalleryImage): GalleryImage {
   return reference;
 }
 
+function stripLocationImageUrl(location: InvitationLocation): InvitationLocation {
+  if (!location.image || typeof location.image === "string") {
+    return location;
+  }
+
+  const image = { ...location.image };
+  delete image.url;
+
+  return {
+    ...location,
+    image,
+  };
+}
+
 function resolveHeroImageUrl(
   image: WeddingInvitationContent["heroImage"],
   signedUrls: Map<string, string>,
@@ -162,5 +189,46 @@ function resolveGalleryImageUrl(
   return {
     ...image,
     url: signedUrls.get(image.objectPath),
+  };
+}
+
+function resolveLocationImageUrl(
+  location: InvitationLocation,
+  signedUrls: Map<string, string>,
+): InvitationLocation {
+  if (!location.image || typeof location.image === "string") {
+    return location;
+  }
+
+  if (!location.image.objectPath) {
+    return location;
+  }
+
+  return {
+    ...location,
+    image: {
+      ...location.image,
+      url: signedUrls.get(location.image.objectPath),
+    },
+  };
+}
+
+function getLocationImageReference(
+  location: InvitationLocation,
+): MediaReference | null {
+  const image = location.image;
+
+  if (!image || typeof image === "string") {
+    return null;
+  }
+
+  if (!image.id || !image.objectPath) {
+    return null;
+  }
+
+  return {
+    bucket: image.bucket ?? "event-media",
+    id: image.id,
+    objectPath: image.objectPath,
   };
 }

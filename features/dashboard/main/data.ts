@@ -48,7 +48,7 @@ export async function getDashboardData(
       id: "invitation-content",
       group: "invitation",
       icon: "document",
-      title: "Contenido de la invitacion",
+      title: "Contenido de la invitación",
       description: event.mainInvitationMessage
         ? "Texto principal guardado"
         : "Textos y detalles pendientes",
@@ -63,7 +63,7 @@ export async function getDashboardData(
       id: "design",
       group: "invitation",
       icon: "palette",
-      title: "Diseno",
+      title: "Diseño",
       description: `${theme.name} · ${palette.name}`,
       status: "pending",
       href: "/admin/personal/invitacion/preview",
@@ -82,7 +82,7 @@ export async function getDashboardData(
       status: event.content.galleryImages?.length ? "completed" : "pending",
       href: "/admin/personal/invitacion/fotografias",
       ctaLabel: "Editar",
-      detail: "Portada y galeria",
+      detail: "Portada y galería",
       optional: true,
     },
     {
@@ -101,22 +101,22 @@ export async function getDashboardData(
       group: "finish",
       icon: "eye",
       title: "Vista previa",
-      description: "Revisa la invitacion real, sin datos demo",
+      description: "Revisa la invitación real, sin datos demo",
       status: "completed",
       href: "/admin/personal/invitacion/preview",
       ctaLabel: "Ver",
-      detail: "Asi veran tu invitacion",
+      detail: "Así verán tu invitación",
       optional: true,
     },
     {
       id: "publish",
       group: "finish",
       icon: "send",
-      title: event.status === "published" ? "Actualizar publicacion" : "Publicacion",
+      title: event.status === "published" ? "Actualizar publicación" : "Publicación",
       description:
         event.status === "published"
           ? "Los cambios quedan en borrador hasta actualizar"
-          : "Comparte tu invitacion cuando este lista",
+          : "Comparte tu invitación cuando esté lista",
       status:
         event.status === "published"
           ? "completed"
@@ -138,10 +138,10 @@ export async function getDashboardData(
       dateLabel: event.dateLabel,
       description:
         event.status === "published"
-          ? "Tu invitacion publicada se mantiene estable."
+          ? "Tu invitación publicada se mantiene estable."
           : readiness.ready
-            ? "Tu invitacion esta lista para publicarse."
-            : "Tu invitacion esta tomando forma.",
+            ? "Tu invitación está lista para publicarse."
+            : "Tu invitación está tomando forma.",
       initials: getInitials(event),
     },
     invitation: {

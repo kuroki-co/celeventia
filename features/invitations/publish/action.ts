@@ -22,14 +22,14 @@ export async function publishInvitation(): Promise<PublishInvitationState> {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Necesitas iniciar sesion." };
+    return { error: "Necesitas iniciar sesión." };
   }
 
   const event = await getRequiredPersonalInvitationEvent(supabase);
   const readiness = evaluatePublicationReadiness(event);
 
   if (!readiness.ready) {
-    return { error: "La invitacion todavia tiene requisitos pendientes." };
+    return { error: "La invitación todavía tiene requisitos pendientes." };
   }
 
   const content = stripTransientMediaUrls(event.content);
@@ -45,7 +45,21 @@ export async function publishInvitation(): Promise<PublishInvitationState> {
     themeId: event.themeId,
   };
 
-  const { error } = await supabase
+  const mediaIds = collectMediaReferences(content).map((media) => media.id);
+
+  if (mediaIds.length) {
+    const { error: mediaError } = await supabase
+      .from("invitation_media")
+      .update({ is_published: true })
+      .eq("event_id", event.id)
+      .in("id", mediaIds);
+
+    if (mediaError) {
+      return { error: "No pudimos proteger las fotos para publicar." };
+    }
+  }
+
+  const { data, error } = await supabase
     .from("events")
     .update({
       published_revision: event.draftRevision,
@@ -53,25 +67,25 @@ export async function publishInvitation(): Promise<PublishInvitationState> {
       status: "published",
       published_at: new Date().toISOString(),
     })
-    .eq("id", event.id);
+    .eq("id", event.id)
+    .eq("draft_revision", event.draftRevision)
+    .select("id")
+    .maybeSingle<{ id: string }>();
 
   if (error) {
-    return { error: "No pudimos publicar la invitacion." };
+    return { error: "No pudimos publicar la invitación." };
   }
 
-  const mediaIds = collectMediaReferences(content).map((media) => media.id);
-
-  if (mediaIds.length) {
-    await supabase
-      .from("invitation_media")
-      .update({ is_published: true })
-      .eq("event_id", event.id)
-      .in("id", mediaIds);
+  if (!data) {
+    return {
+      error:
+        "Hay cambios más recientes. Recarga la página antes de volver a publicar.",
+    };
   }
 
   revalidatePath("/admin/personal/invitacion/publicar");
   revalidatePath("/admin/personal/invitados");
   revalidatePath(`/i/${event.slug}`);
 
-  return { success: "Invitacion publicada." };
+  return { success: "Invitación publicada." };
 }

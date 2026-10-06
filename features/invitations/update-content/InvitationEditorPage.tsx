@@ -49,11 +49,11 @@ export async function InvitationEditorPage({
               Editor
             </p>
             <h1 className="mt-3 font-serif text-[2.45rem] font-semibold leading-none text-midnight-navy sm:text-[3rem]">
-              Configura tu invitacion
+              Configura tu invitación
             </h1>
             <p className="mt-3 max-w-2xl text-sm leading-6 text-midnight-navy/62">
               Guarda cada seccion del borrador. La version publica no cambia
-              hasta usar la accion de actualizacion en Publicacion.
+              hasta usar la acción de actualización en Publicación.
             </p>
           </section>
           <InvitationContentEditor

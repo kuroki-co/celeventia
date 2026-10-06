@@ -26,7 +26,7 @@ export async function changeInvitationDesign(
   const parsed = schema.safeParse(input);
 
   if (!parsed.success) {
-    return { error: "Seleccion invalida." };
+    return { error: "Selección inválida." };
   }
 
   const supabase = await createClient();
@@ -35,7 +35,7 @@ export async function changeInvitationDesign(
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { error: "Necesitas iniciar sesion." };
+    return { error: "Necesitas iniciar sesión." };
   }
 
   const { data: currentEvent, error: currentEventError } = await supabase
@@ -56,19 +56,23 @@ export async function changeInvitationDesign(
       palette_id: parsed.data.paletteId,
     })
     .eq("id", parsed.data.eventId)
+    .eq("draft_revision", currentEvent.draft_revision ?? 1)
     .select("id, slug")
     .maybeSingle<{ id: string; slug: string | null }>();
 
   if (error) {
-    return { error: "No pudimos guardar el diseno." };
+    return { error: "No pudimos guardar el diseño." };
   }
 
   if (!data) {
-    return { error: "No pudimos confirmar el evento autorizado." };
+    return {
+      error:
+        "Hay cambios más recientes. Recarga la página antes de volver a guardar el diseño.",
+    };
   }
 
   revalidatePath("/admin/personal/invitacion/preview");
   revalidatePath("/admin/personal/invitacion/publicar");
 
-  return { success: "Diseno guardado." };
+  return { success: "Diseño guardado." };
 }

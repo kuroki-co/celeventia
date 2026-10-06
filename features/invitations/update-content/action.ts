@@ -93,7 +93,7 @@ export async function updateWeddingDetails(
     return {
       error: error
         ? "No pudimos guardar los datos."
-        : "Hay cambios mas recientes. Recarga la pagina antes de volver a guardar.",
+        : "Hay cambios más recientes. Recarga la página antes de volver a guardar.",
       formKey: createFormKey(),
       values,
     };
@@ -142,6 +142,12 @@ export async function updateLocations(
     };
   }
 
+  const currentCeremony = event.content.locations?.find(
+    (location) => location.kind === "Ceremonia",
+  );
+  const currentReception = event.content.locations?.find(
+    (location) => location.kind === "Recepcion",
+  );
   const locations: WeddingInvitationContent["locations"] = [
     {
       address: parsed.data.ceremonyAddress || undefined,
@@ -153,6 +159,7 @@ export async function updateLocations(
         time: parsed.data.ceremonyTime,
       }),
       kind: "Ceremonia",
+      image: currentCeremony?.image,
       mapUrl: parsed.data.ceremonyMapUrl || undefined,
       name: parsed.data.ceremonyName || "",
       time: parsed.data.ceremonyTime || undefined,
@@ -167,6 +174,7 @@ export async function updateLocations(
         time: parsed.data.receptionTime,
       }),
       kind: "Recepcion",
+      image: currentReception?.image,
       mapUrl: parsed.data.receptionMapUrl || undefined,
       name: parsed.data.receptionName || "",
       time: parsed.data.receptionTime || undefined,
@@ -200,7 +208,7 @@ export async function updateLocations(
     return {
       error: error
         ? "No pudimos guardar los lugares."
-        : "Hay cambios mas recientes. Recarga la pagina antes de volver a guardar.",
+        : "Hay cambios más recientes. Recarga la página antes de volver a guardar.",
       formKey: createFormKey(),
       values,
     };
@@ -309,7 +317,7 @@ export async function updateSimpleContent(
     return {
       error: error
         ? "No pudimos guardar el contenido."
-        : "Hay cambios mas recientes. Recarga la pagina antes de volver a guardar.",
+        : "Hay cambios más recientes. Recarga la página antes de volver a guardar.",
       formKey: createFormKey(),
       values,
     };

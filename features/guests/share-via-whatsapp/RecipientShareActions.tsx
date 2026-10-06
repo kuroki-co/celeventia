@@ -51,21 +51,16 @@ export function RecipientShareActions({
     const finalMessage = ensureMessageContainsLink(message, recipient.publicLink);
     const text = encodeURIComponent(finalMessage);
     const phone = toWhatsAppPhone(recipient.normalizedPhone);
-    const opened = window.open(
+    window.open(
       `https://wa.me/${phone}?text=${text}`,
       "_blank",
       "noopener",
     );
 
-    if (!opened) {
-      setCopyStatus("No pudimos abrir WhatsApp. Copia el enlace manualmente.");
-      return;
-    }
-
     startTransition(async () => {
       const result = await markRecipientShared(recipient.id);
 
-      setCopyStatus(result.error ?? "WhatsApp abierto");
+      setCopyStatus(result.error ?? "WhatsApp solicitado");
     });
   }
 
@@ -100,7 +95,7 @@ export function RecipientShareActions({
 
       {!isInvitationPublished ? (
         <p className="mt-2 text-sm leading-5 text-midnight-navy/52">
-          Publica la invitacion para habilitar enlaces publicos y WhatsApp.
+          Publica la invitación para habilitar enlaces públicos y WhatsApp.
         </p>
       ) : !canUseWhatsApp ? (
         <p className="mt-2 text-sm leading-5 text-midnight-navy/52">
@@ -139,8 +134,8 @@ export function RecipientShareActions({
             {isPending ? "Preparando..." : "Abrir WhatsApp"}
           </button>
           <p className="mt-2 text-xs leading-5 text-midnight-navy/52">
-            Celeventia registrará que abriste WhatsApp, no que el mensaje fue
-            entregado o leído.
+            Celeventia registrara que solicitaste abrir WhatsApp, no que el
+            mensaje fue entregado o leido.
           </p>
         </div>
       ) : null}

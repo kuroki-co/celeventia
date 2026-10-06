@@ -13,7 +13,7 @@ type PublicInvitationPageProps = {
 
 export const metadata: Metadata = {
   title: "Invitacion | Celeventia",
-  description: "Invitacion personalizada y confirmacion de asistencia.",
+  description: "Invitación personalizada y confirmación de asistencia.",
 };
 
 export default async function PublicInvitationPage({
