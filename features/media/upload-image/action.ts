@@ -176,6 +176,7 @@ export async function finalizeInvitationImageUpload(
           ...event.content,
           heroImage: {
             ...uploadedMedia[0],
+            cropZoom: 1,
             focalX: 50,
             focalY: 50,
           } satisfies HeroImage,

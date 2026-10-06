@@ -53,6 +53,7 @@ export type WeddingInvitationContent = {
 
 export type HeroImage = {
   bucket?: string;
+  cropZoom?: number;
   focalX?: number;
   focalY?: number;
   id?: string;

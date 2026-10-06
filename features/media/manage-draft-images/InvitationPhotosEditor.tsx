@@ -4,25 +4,32 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ImagePlus, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  CheckCircle2,
+  ImagePlus,
+  RotateCcw,
+  Trash2,
+  UploadCloud,
+  X,
+} from "lucide-react";
+import Cropper, { type Area } from "react-easy-crop";
 import {
   useActionState,
+  useCallback,
   useEffect,
   useId,
   useMemo,
   useRef,
   useState,
   useTransition,
+  type DragEvent,
   type FormEvent,
+  type ReactNode,
 } from "react";
 import { useFormStatus } from "react-dom";
 
-import { createClient } from "@/shared/supabase/client";
-import type {
-  GalleryImage,
-  HeroImage,
-  WeddingInvitationContent,
-} from "@/invitation/renderer/types";
 import type { PersonalInvitationEvent } from "@/features/invitations/get-personal-invitation/data";
 import { deleteInvitationImage } from "@/features/media/delete-image/action";
 import {
@@ -31,10 +38,10 @@ import {
   type UploadPurpose,
 } from "@/features/media/upload-image/action";
 import {
+  allowedImageExtensionsLabel,
   allowedImageTypes,
   maxGalleryImages,
   maxImageSizeBytes,
-  allowedImageExtensionsLabel,
   maxImageSizeLabel,
 } from "@/features/media/upload-image/limits";
 import {
@@ -43,6 +50,12 @@ import {
   updateHeroImageFocalPoint,
   type DraftImageActionState,
 } from "@/features/media/update-draft-images/action";
+import type {
+  GalleryImage,
+  HeroImage,
+  WeddingInvitationContent,
+} from "@/invitation/renderer/types";
+import { createClient } from "@/shared/supabase/client";
 
 type InvitationPhotosEditorProps = {
   event: PersonalInvitationEvent;
@@ -102,79 +115,75 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
 
   return (
     <div className="grid gap-5">
-      <section className="grid gap-4 rounded-[18px] border border-midnight-navy/10 bg-white p-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-midnight-navy">
-              Foto de portada
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-midnight-navy/60">
-              Esta imagen aparece en el hero y en la entrada de la invitacion.
-              Puedes ajustar el punto focal para encuadrarla mejor.
-            </p>
-          </div>
-          <UploadImageForm
-            buttonLabel={heroImage ? "Reemplazar portada" : "Subir foto de portada"}
-            eventId={event.id}
-            existingGalleryCount={galleryImages.length}
-            purpose="invitation"
-          />
-        </div>
+      <section className="grid gap-5">
+        <PhotoSectionHeader
+          description="Aparece en el hero y en la entrada de la invitacion."
+          status={heroImage ? "Portada cargada" : "Sin portada"}
+          title="Foto de portada"
+        />
 
-        {heroImage ? (
-          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-            <div className="overflow-hidden rounded-[18px] border border-midnight-navy/10 bg-midnight-navy/5">
-              {heroImage.url ? (
-                <img
-                  alt="Foto de portada"
-                  className="aspect-[4/5] w-full object-cover sm:aspect-[16/9]"
-                  src={heroImage.url}
-                  style={{
-                    objectPosition: `${heroImage.focalX ?? 50}% ${heroImage.focalY ?? 50}%`,
-                  }}
-                />
-              ) : (
-                <div className="grid aspect-[16/9] place-items-center px-4 text-center text-sm font-semibold text-midnight-navy/55">
-                  No pudimos generar la vista previa de esta imagen.
-                </div>
-              )}
-            </div>
-            <HeroFocalForm
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_19rem] lg:items-start">
+          {heroImage?.url ? (
+            <HeroCropForm
               eventId={event.id}
+              cropZoom={heroImage.cropZoom ?? 1}
               focalX={heroImage.focalX ?? 50}
               focalY={heroImage.focalY ?? 50}
+              imageUrl={heroImage.url}
+              key={heroImage.id ?? heroImage.objectPath ?? "hero"}
               mediaId={heroImage.id}
               onDelete={deleteImage}
             />
+          ) : (
+            <div className="overflow-hidden rounded-[18px] border border-midnight-navy/10 bg-midnight-navy/5 shadow-sm">
+              <div className="grid aspect-[4/5] place-items-center bg-porcelain px-6 text-center sm:aspect-[16/9]">
+                <div className="grid max-w-sm justify-items-center gap-3">
+                  <span className="grid size-12 place-items-center rounded-full bg-white text-muted-mauve shadow-sm">
+                    <ImagePlus aria-hidden="true" className="size-5" />
+                  </span>
+                  <p className="text-sm font-semibold text-midnight-navy">
+                    Aun no hay foto de portada en el borrador.
+                  </p>
+                  <p className="text-xs leading-5 text-midnight-navy/55">
+                    Sube una imagen horizontal o vertical; luego podras ajustar
+                    el encuadre.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="grid gap-4">
+            <UploadImageForm
+              buttonLabel={heroImage ? "Usar nueva portada" : "Usar esta portada"}
+              dropzoneTitle={heroImage ? "Reemplazar portada" : "Subir portada"}
+              eventId={event.id}
+              existingGalleryCount={galleryImages.length}
+              purpose="invitation"
+            />
           </div>
-        ) : (
-          <EmptyPhotoState text="Aun no hay foto de portada en el borrador." />
-        )}
+        </div>
       </section>
 
-      <section className="grid gap-4 rounded-[18px] border border-midnight-navy/10 bg-white p-4">
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h3 className="text-base font-semibold text-midnight-navy">
-              Galeria
-            </h3>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-midnight-navy/60">
-              Agrega fotos al borrador, ordenalas y elimina las que no quieras
-              mostrar. La version publicada se conserva hasta actualizarla.
-            </p>
-          </div>
-          <UploadImageForm
-            buttonLabel="Agregar fotos a la galeria"
-            eventId={event.id}
-            existingGalleryCount={galleryImages.length}
-            purpose="gallery"
-          />
-        </div>
+      <section className="grid gap-5 border-t border-midnight-navy/8 pt-5">
+        <PhotoSectionHeader
+          description="Agrega fotos al borrador, ordenalas y elimina las que no quieras mostrar."
+          status={`${galleryImages.length}/${maxGalleryImages} fotos`}
+          title="Galeria"
+        />
+
+        <UploadImageForm
+          buttonLabel="Agregar fotos"
+          dropzoneTitle="Agregar a la galeria"
+          eventId={event.id}
+          existingGalleryCount={galleryImages.length}
+          purpose="gallery"
+        />
 
         {galleryImages.length ? (
-          <div className="grid gap-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {galleryImages.map((image, index) => (
-              <GalleryImageRow
+              <GalleryImageTile
                 eventId={event.id}
                 image={image}
                 index={index}
@@ -192,7 +201,10 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
       </section>
 
       <div className="flex flex-col gap-3 rounded-[18px] border border-midnight-navy/10 bg-porcelain px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <p aria-live="polite" className="min-h-5 text-sm font-semibold text-midnight-navy/62">
+        <p
+          aria-live="polite"
+          className="min-h-5 text-sm font-semibold text-midnight-navy/62"
+        >
           {isPending ? "Guardando..." : message}
         </p>
         <Link
@@ -206,27 +218,57 @@ export function InvitationPhotosEditor({ event }: InvitationPhotosEditorProps) {
   );
 }
 
+function PhotoSectionHeader({
+  description,
+  status,
+  title,
+}: {
+  description: string;
+  status: string;
+  title: string;
+}) {
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+      <div>
+        <h3 className="text-base font-semibold text-midnight-navy">{title}</h3>
+        <p className="mt-1 max-w-2xl text-sm leading-6 text-midnight-navy/60">
+          {description}
+        </p>
+      </div>
+      <span className="inline-flex w-fit items-center rounded-full border border-muted-mauve/20 bg-muted-mauve/10 px-3 py-1 text-xs font-semibold text-muted-mauve">
+        {status}
+      </span>
+    </div>
+  );
+}
+
 function UploadImageForm({
   buttonLabel,
+  dropzoneTitle,
   eventId,
   existingGalleryCount,
   purpose,
 }: {
   buttonLabel: string;
+  dropzoneTitle: string;
   existingGalleryCount: number;
   eventId: string;
   purpose: UploadPurpose;
 }) {
   const router = useRouter();
   const inputId = useId();
+  const helpId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [previews, setPreviews] = useState<SelectedPreview[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState("");
   const [status, setStatus] = useState<{
     error?: string;
     success?: string;
   }>({});
+  const isGalleryFull =
+    purpose === "gallery" && existingGalleryCount >= maxGalleryImages;
+  const selectedCount = previews.length;
 
   useEffect(() => {
     return () => {
@@ -243,15 +285,51 @@ function UploadImageForm({
         url: URL.createObjectURL(file),
       })),
     );
-    setSelectedFiles(
-      files.length ? files.map((file) => file.name).join(", ") : "",
-    );
+  }
+
+  function setFiles(files: FileList | File[]) {
+    const nextFiles = Array.from(files);
+    const selected = purpose === "gallery" ? nextFiles : nextFiles.slice(0, 1);
+    setStatus({});
+    updateSelectedFiles(selected);
+  }
+
+  function clearSelection() {
+    if (inputRef.current) {
+      inputRef.current.value = "";
+    }
+
+    setStatus({});
+    updateSelectedFiles([]);
+  }
+
+  function handleDragOver(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+
+    if (!isGalleryFull && !isUploading) {
+      setIsDragging(true);
+    }
+  }
+
+  function handleDrop(event: DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    setIsDragging(false);
+
+    if (isGalleryFull || isUploading) {
+      return;
+    }
+
+    if (inputRef.current) {
+      inputRef.current.files = event.dataTransfer.files;
+    }
+
+    setFiles(event.dataTransfer.files);
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (isUploading) {
+    if (isUploading || isGalleryFull) {
       return;
     }
 
@@ -327,7 +405,6 @@ function UploadImageForm({
       }
 
       setStatus({ success: result.success ?? "Imagen cargada." });
-      setSelectedFiles("");
       updateSelectedFiles([]);
 
       if (inputRef.current) {
@@ -354,78 +431,122 @@ function UploadImageForm({
   }
 
   return (
-    <form
-      className="grid w-full gap-2 sm:max-w-[22rem] sm:min-w-[18rem]"
-      onSubmit={handleSubmit}
-    >
+    <form className="grid gap-3" onSubmit={handleSubmit}>
       <input name="eventId" type="hidden" value={eventId} />
       <input name="purpose" type="hidden" value={purpose} />
-      <div className="grid gap-2">
-        <input
-          accept="image/jpeg,image/png,image/webp"
-          className="sr-only"
-          id={inputId}
-          multiple={purpose === "gallery"}
-          name="file"
-          ref={inputRef}
-          onChange={(event) => {
-            const files = Array.from(event.currentTarget.files ?? []);
-            setStatus({});
-            updateSelectedFiles(purpose === "gallery" ? files : files.slice(0, 1));
-          }}
-          required
-          type="file"
-        />
-        <div className="flex min-w-0 flex-col gap-2 sm:flex-row">
-          <label
-            className="inline-flex min-h-11 shrink-0 cursor-pointer items-center justify-center rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition hover:bg-[#7D5F78]"
-            htmlFor={inputId}
-          >
-            Seleccionar archivo
-          </label>
-          <p className="min-h-11 min-w-0 rounded-2xl border border-midnight-navy/12 bg-white px-3 py-3 text-sm font-semibold text-midnight-navy/70 sm:flex-1">
-            <span className="block truncate">
-              {selectedFiles || "Ningun archivo seleccionado"}
-            </span>
-          </p>
-        </div>
-      </div>
-      <p className="text-xs leading-5 text-midnight-navy/55">
+      <input
+        accept={allowedImageTypes.join(",")}
+        aria-describedby={helpId}
+        className="sr-only"
+        disabled={isGalleryFull || isUploading}
+        id={inputId}
+        multiple={purpose === "gallery"}
+        name="file"
+        ref={inputRef}
+        onChange={(event) => {
+          setFiles(event.currentTarget.files ?? []);
+        }}
+        required
+        type="file"
+      />
+
+      <label
+        className={[
+          "group grid cursor-pointer justify-items-center gap-3 rounded-[18px] border border-dashed px-4 py-5 text-center transition",
+          isDragging
+            ? "border-muted-mauve bg-muted-mauve/10"
+            : "border-midnight-navy/16 bg-porcelain hover:border-muted-mauve/55 hover:bg-white",
+          isGalleryFull || isUploading ? "cursor-not-allowed opacity-65" : "",
+        ].join(" ")}
+        htmlFor={inputId}
+        onDragLeave={() => setIsDragging(false)}
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
+        <span className="grid size-11 place-items-center rounded-full bg-white text-muted-mauve shadow-sm transition group-hover:scale-[1.03]">
+          <UploadCloud aria-hidden="true" className="size-5" />
+        </span>
+        <span className="grid gap-1">
+          <span className="text-sm font-semibold text-midnight-navy">
+            {isGalleryFull ? "Galeria completa" : dropzoneTitle}
+          </span>
+          <span className="text-xs leading-5 text-midnight-navy/55">
+            {isGalleryFull
+              ? `Ya tienes ${maxGalleryImages} fotos en el borrador.`
+              : "Arrastra una imagen aqui o elige una de tu dispositivo."}
+          </span>
+        </span>
+        <span className="inline-flex min-h-9 items-center rounded-full border border-muted-mauve/20 bg-white px-4 text-xs font-semibold text-muted-mauve">
+          Elegir archivo{purpose === "gallery" ? "s" : ""}
+        </span>
+      </label>
+
+      <p id={helpId} className="text-xs leading-5 text-midnight-navy/55">
         {allowedImageExtensionsLabel}. Maximo {maxImageSizeLabel} por imagen.
         {purpose === "gallery"
           ? ` Galeria: ${existingGalleryCount}/${maxGalleryImages}.`
           : ""}
       </p>
+
       {previews.length ? (
-        <div className="grid gap-2">
-          {previews.map((preview) => (
-            <div
-              className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3 rounded-2xl border border-midnight-navy/10 bg-porcelain p-2"
-              key={`${preview.name}-${preview.size}`}
+        <div className="grid gap-2 rounded-[18px] border border-midnight-navy/10 bg-white p-3">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-midnight-navy/45">
+              Seleccion
+            </p>
+            <button
+              className="inline-flex size-8 items-center justify-center rounded-full text-midnight-navy/55 transition hover:bg-midnight-navy/5"
+              onClick={clearSelection}
+              type="button"
             >
-              <img
-                alt=""
-                className="size-14 rounded-xl object-cover"
-                src={preview.url}
-              />
-              <p className="min-w-0 text-xs font-semibold leading-5 text-midnight-navy/65">
-                <span className="block truncate text-midnight-navy">
-                  {preview.name}
-                </span>
-                {formatFileSize(preview.size)}
-              </p>
-            </div>
-          ))}
+              <span className="sr-only">Quitar seleccion</span>
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          </div>
+          <div className="grid gap-2">
+            {previews.map((preview) => (
+              <div
+                className="grid grid-cols-[56px_minmax(0,1fr)] items-center gap-3"
+                key={`${preview.name}-${preview.size}`}
+              >
+                <img
+                  alt=""
+                  className="size-14 rounded-xl object-cover"
+                  src={preview.url}
+                />
+                <p className="min-w-0 text-xs font-semibold leading-5 text-midnight-navy/65">
+                  <span className="block truncate text-midnight-navy">
+                    {preview.name}
+                  </span>
+                  {formatFileSize(preview.size)}
+                </p>
+              </div>
+            ))}
+          </div>
         </div>
       ) : null}
+
       <button
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition hover:bg-[#7D5F78] disabled:cursor-wait disabled:bg-muted-mauve/50"
-        disabled={isUploading}
+        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-2xl bg-muted-mauve px-4 text-sm font-semibold text-white transition hover:bg-[#7D5F78] disabled:cursor-not-allowed disabled:bg-muted-mauve/45"
+        disabled={isUploading || isGalleryFull || selectedCount === 0}
         type="submit"
       >
-        <ImagePlus aria-hidden="true" className="size-4" />
-        {isUploading ? "Subiendo..." : buttonLabel}
+        {isUploading ? (
+          <>
+            <span
+              aria-hidden="true"
+              className="size-4 animate-spin rounded-full border-2 border-white/40 border-t-white"
+            />
+            Subiendo...
+          </>
+        ) : (
+          <>
+            <ImagePlus aria-hidden="true" className="size-4" />
+            {buttonLabel}
+          </>
+        )}
       </button>
+
       <p
         aria-live="polite"
         className={[
@@ -439,16 +560,20 @@ function UploadImageForm({
   );
 }
 
-function HeroFocalForm({
+function HeroCropForm({
+  cropZoom,
   eventId,
   focalX,
   focalY,
+  imageUrl,
   mediaId,
   onDelete,
 }: {
+  cropZoom: number;
   eventId: string;
   focalX: number;
   focalY: number;
+  imageUrl: string;
   mediaId?: string;
   onDelete: (mediaId: string) => void;
 }) {
@@ -456,39 +581,166 @@ function HeroFocalForm({
     updateHeroImageFocalPoint,
     initialImageState,
   );
-  const [x, setX] = useState(focalX);
-  const [y, setY] = useState(focalY);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(clampZoom(cropZoom));
+  const [focalPoint, setFocalPoint] = useState({
+    x: focalX,
+    y: focalY,
+  });
+  const initialCroppedArea = useMemo(
+    () => getInitialHeroCrop(focalX, focalY, cropZoom),
+    [cropZoom, focalX, focalY],
+  );
+  const cropperStyle = useMemo(
+    () => ({
+      containerStyle: {
+        backgroundColor: "#102A43",
+      },
+      cropAreaStyle: {
+        border: "1px solid rgba(248, 246, 242, 0.95)",
+        boxShadow: "0 0 0 9999px rgba(16, 42, 67, 0.42)",
+      },
+    }),
+    [],
+  );
+  const hasChanges =
+    Number(zoom.toFixed(2)) !== Number(clampZoom(cropZoom).toFixed(2)) ||
+    Math.round(focalPoint.x) !== Math.round(focalX) ||
+    Math.round(focalPoint.y) !== Math.round(focalY);
+
+  const updateCrop = useCallback((nextCrop: { x: number; y: number }) => {
+    if (!Number.isFinite(nextCrop.x) || !Number.isFinite(nextCrop.y)) {
+      return;
+    }
+
+    setCrop((current) =>
+      current.x === nextCrop.x && current.y === nextCrop.y
+        ? current
+        : nextCrop,
+    );
+  }, []);
+
+  const updateZoom = useCallback((nextZoom: number) => {
+    if (!Number.isFinite(nextZoom)) {
+      return;
+    }
+
+    setZoom((current) => (current === nextZoom ? current : nextZoom));
+  }, []);
+
+  const updateFocalPoint = useCallback((croppedArea: Area) => {
+    const nextX = croppedArea.x + croppedArea.width / 2;
+    const nextY = croppedArea.y + croppedArea.height / 2;
+
+    if (!Number.isFinite(nextX) || !Number.isFinite(nextY)) {
+      return;
+    }
+
+    setFocalPoint((current) => {
+      const next = {
+        x: clampPercentage(nextX),
+        y: clampPercentage(nextY),
+      };
+
+      return Math.round(current.x) === Math.round(next.x) &&
+        Math.round(current.y) === Math.round(next.y)
+        ? current
+        : next;
+    });
+  }, []);
+
+  function resetFocalPoint() {
+    setCrop({ x: 0, y: 0 });
+    setZoom(clampZoom(cropZoom));
+    setFocalPoint({
+      x: focalX,
+      y: focalY,
+    });
+  }
 
   return (
-    <form action={formAction} className="grid content-start gap-4">
+    <form
+      action={formAction}
+      className="grid gap-4 rounded-[18px] border border-midnight-navy/10 bg-white p-3 shadow-sm"
+    >
       <input name="eventId" type="hidden" value={eventId} />
-      <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
-        Encuadre horizontal
-        <input
-          max={100}
-          min={0}
-          name="focalX"
-          onChange={(event) => setX(Number(event.target.value))}
-          type="range"
-          value={x}
+      <input name="cropZoom" type="hidden" value={Number(zoom.toFixed(2))} />
+      <input name="focalX" type="hidden" value={Math.round(focalPoint.x)} />
+      <input name="focalY" type="hidden" value={Math.round(focalPoint.y)} />
+
+      <div className="relative aspect-[4/5] overflow-hidden rounded-[14px] bg-midnight-navy sm:aspect-[16/9]">
+        <Cropper
+          aspect={16 / 9}
+          crop={crop}
+          cropShape="rect"
+          image={imageUrl}
+          initialCroppedAreaPercentages={initialCroppedArea}
+          onCropChange={updateCrop}
+          onCropComplete={updateFocalPoint}
+          onZoomChange={updateZoom}
+          restrictPosition
+          showGrid={false}
+          zoom={zoom}
+          style={cropperStyle}
         />
-      </label>
-      <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
-        Encuadre vertical
-        <input
-          max={100}
-          min={0}
-          name="focalY"
-          onChange={(event) => setY(Number(event.target.value))}
-          type="range"
-          value={y}
-        />
-      </label>
-      <div className="flex flex-col gap-2">
-        <ImageSubmitButton label="Guardar encuadre" />
+      </div>
+
+      <div className="grid gap-4 px-1 pb-1 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
+        <div className="grid gap-3">
+          <div>
+            <h4 className="text-sm font-semibold text-midnight-navy">
+              Encuadra la portada
+            </h4>
+            <p className="mt-1 text-xs leading-5 text-midnight-navy/55">
+              Arrastra la foto y ajusta el zoom hasta que el recorte se vea bien.
+            </p>
+          </div>
+          <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
+            <span className="flex items-center justify-between">
+              Zoom
+              <span className="text-xs text-midnight-navy/45">
+                {zoom.toFixed(1)}x
+              </span>
+            </span>
+            <input
+              aria-label="Zoom de la portada"
+              className="h-2 accent-muted-mauve"
+              max={3}
+              min={1}
+              onChange={(event) => updateZoom(Number(event.target.value))}
+              step={0.05}
+              type="range"
+              value={zoom}
+            />
+          </label>
+        </div>
+        <div className="grid gap-2 sm:min-w-48">
+          <ImageSubmitButton disabled={!hasChanges} label="Guardar encuadre" />
+          <button
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-midnight-navy/10 px-4 text-sm font-semibold text-midnight-navy/62 transition hover:bg-midnight-navy/5 disabled:cursor-not-allowed disabled:opacity-45"
+            disabled={!hasChanges}
+            onClick={resetFocalPoint}
+            type="button"
+          >
+            <RotateCcw aria-hidden="true" className="size-4" />
+            Reiniciar
+          </button>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 border-t border-midnight-navy/8 px-1 pt-3 sm:flex-row sm:items-center sm:justify-between">
+        <p
+          aria-live="polite"
+          className={[
+            "min-h-5 text-sm font-semibold",
+            state.error ? "text-[#8A3A3A]" : "text-[#24523D]",
+          ].join(" ")}
+        >
+          {state.error ?? state.success ?? ""}
+        </p>
         {mediaId ? (
           <button
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-[#8A3A3A]/20 px-4 text-sm font-semibold text-[#8A3A3A] transition hover:bg-[#8A3A3A]/5"
+            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-[#8A3A3A]/20 px-4 text-sm font-semibold text-[#8A3A3A] transition hover:bg-[#8A3A3A]/5 sm:w-fit"
             onClick={() => onDelete(mediaId)}
             type="button"
           >
@@ -497,20 +749,11 @@ function HeroFocalForm({
           </button>
         ) : null}
       </div>
-      <p
-        aria-live="polite"
-        className={[
-          "min-h-5 text-sm font-semibold",
-          state.error ? "text-[#8A3A3A]" : "text-[#24523D]",
-        ].join(" ")}
-      >
-        {state.error ?? state.success ?? ""}
-      </p>
     </form>
   );
 }
 
-function GalleryImageRow({
+function GalleryImageTile({
   eventId,
   image,
   index,
@@ -533,8 +776,8 @@ function GalleryImageRow({
   );
 
   return (
-    <article className="grid gap-3 rounded-[18px] border border-midnight-navy/10 bg-porcelain p-3 sm:grid-cols-[120px_minmax(0,1fr)_auto] sm:items-center">
-      <div className="overflow-hidden rounded-[14px] border border-midnight-navy/10 bg-white">
+    <article className="overflow-hidden rounded-[18px] border border-midnight-navy/10 bg-white shadow-sm">
+      <div className="relative bg-porcelain">
         {image.url ? (
           <img
             alt={image.alt ?? `Foto ${index + 1}`}
@@ -546,11 +789,38 @@ function GalleryImageRow({
             Sin vista previa
           </div>
         )}
+        <span className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1 text-xs font-semibold text-midnight-navy shadow-sm">
+          {index + 1}
+        </span>
+        <div className="absolute right-2 top-2 flex gap-1 rounded-full bg-white/92 p-1 shadow-sm">
+          <IconButton
+            disabled={isFirst || !image.id}
+            label="Subir foto en el orden"
+            onClick={() => image.id && onMove(image.id, "up")}
+          >
+            <ArrowUp aria-hidden="true" className="size-4" />
+          </IconButton>
+          <IconButton
+            disabled={isLast || !image.id}
+            label="Bajar foto en el orden"
+            onClick={() => image.id && onMove(image.id, "down")}
+          >
+            <ArrowDown aria-hidden="true" className="size-4" />
+          </IconButton>
+          <IconButton
+            danger
+            disabled={!image.id}
+            label="Eliminar foto del borrador"
+            onClick={() => image.id && onDelete(image.id)}
+          >
+            <Trash2 aria-hidden="true" className="size-4" />
+          </IconButton>
+        </div>
       </div>
-      <form action={formAction} className="grid gap-2">
+      <form action={formAction} className="grid gap-3 p-3">
         <input name="eventId" type="hidden" value={eventId} />
         <input name="mediaId" type="hidden" value={image.id} />
-        <label className="grid gap-1 text-sm font-semibold text-midnight-navy">
+        <label className="grid gap-1 text-xs font-semibold text-midnight-navy">
           Descripcion opcional
           <input
             className="min-h-10 rounded-2xl border border-midnight-navy/12 bg-white px-3 text-sm font-medium text-midnight-navy outline-none transition focus:border-muted-mauve"
@@ -559,12 +829,12 @@ function GalleryImageRow({
             name="alt"
           />
         </label>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <ImageSubmitButton label="Guardar texto" />
           <p
             aria-live="polite"
             className={[
-              "min-h-5 text-sm font-semibold",
+              "min-h-5 text-xs font-semibold",
               state.error ? "text-[#8A3A3A]" : "text-[#24523D]",
             ].join(" ")}
           >
@@ -572,57 +842,77 @@ function GalleryImageRow({
           </p>
         </div>
       </form>
-      <div className="flex gap-2 sm:flex-col">
-        <button
-          aria-label="Subir foto en el orden"
-          className="inline-flex size-10 items-center justify-center rounded-full border border-midnight-navy/10 text-midnight-navy/65 disabled:opacity-35"
-          disabled={isFirst || !image.id}
-          onClick={() => image.id && onMove(image.id, "up")}
-          type="button"
-        >
-          <ArrowUp aria-hidden="true" className="size-4" />
-        </button>
-        <button
-          aria-label="Bajar foto en el orden"
-          className="inline-flex size-10 items-center justify-center rounded-full border border-midnight-navy/10 text-midnight-navy/65 disabled:opacity-35"
-          disabled={isLast || !image.id}
-          onClick={() => image.id && onMove(image.id, "down")}
-          type="button"
-        >
-          <ArrowDown aria-hidden="true" className="size-4" />
-        </button>
-        <button
-          aria-label="Eliminar foto del borrador"
-          className="inline-flex size-10 items-center justify-center rounded-full border border-[#8A3A3A]/20 text-[#8A3A3A] disabled:opacity-35"
-          disabled={!image.id}
-          onClick={() => image.id && onDelete(image.id)}
-          type="button"
-        >
-          <Trash2 aria-hidden="true" className="size-4" />
-        </button>
-      </div>
     </article>
   );
 }
 
-function ImageSubmitButton({ label }: { label: string }) {
+function IconButton({
+  children,
+  danger = false,
+  disabled,
+  label,
+  onClick,
+}: {
+  children: ReactNode;
+  danger?: boolean;
+  disabled?: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-label={label}
+      className={[
+        "inline-flex size-9 items-center justify-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-35",
+        danger
+          ? "text-[#8A3A3A] hover:bg-[#8A3A3A]/10"
+          : "text-midnight-navy/65 hover:bg-midnight-navy/10",
+      ].join(" ")}
+      disabled={disabled}
+      onClick={onClick}
+      title={label}
+      type="button"
+    >
+      {children}
+    </button>
+  );
+}
+
+function ImageSubmitButton({
+  disabled = false,
+  label,
+}: {
+  disabled?: boolean;
+  label: string;
+}) {
   const { pending } = useFormStatus();
 
   return (
     <button
-      className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-muted-mauve/25 px-4 text-sm font-semibold text-muted-mauve transition hover:bg-muted-mauve/5 disabled:cursor-wait disabled:opacity-50"
-      disabled={pending}
+      className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-muted-mauve/25 px-4 text-sm font-semibold text-muted-mauve transition hover:bg-muted-mauve/5 disabled:cursor-not-allowed disabled:opacity-45"
+      disabled={pending || disabled}
       type="submit"
     >
-      {pending ? "Guardando..." : label}
+      {pending ? (
+        <>
+          <span
+            aria-hidden="true"
+            className="size-4 animate-spin rounded-full border-2 border-muted-mauve/30 border-t-muted-mauve"
+          />
+          Guardando...
+        </>
+      ) : (
+        label
+      )}
     </button>
   );
 }
 
 function EmptyPhotoState({ text }: { text: string }) {
   return (
-    <div className="rounded-[18px] border border-dashed border-midnight-navy/16 bg-porcelain px-4 py-5 text-sm font-semibold text-midnight-navy/55">
-      {text}
+    <div className="grid justify-items-center gap-2 rounded-[18px] border border-dashed border-midnight-navy/16 bg-porcelain px-4 py-6 text-center">
+      <CheckCircle2 aria-hidden="true" className="size-5 text-midnight-navy/28" />
+      <p className="text-sm font-semibold text-midnight-navy/55">{text}</p>
     </div>
   );
 }
@@ -675,4 +965,33 @@ function validateSelectedImages(
 
 function formatFileSize(bytes: number) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function clampPercentage(value: number) {
+  return Math.max(0, Math.min(100, value));
+}
+
+function clampZoom(value?: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 1;
+  }
+
+  return Math.max(1, Math.min(3, value));
+}
+
+function getInitialHeroCrop(
+  focalX: number,
+  focalY: number,
+  cropZoom: number,
+): Area {
+  const visibleArea = 100 / clampZoom(cropZoom);
+  const width = visibleArea;
+  const height = visibleArea;
+
+  return {
+    height,
+    width,
+    x: clampPercentage(focalX - width / 2),
+    y: clampPercentage(focalY - height / 2),
+  };
 }

@@ -232,7 +232,7 @@ function InvitationHero({
           alt=""
           className="absolute inset-0 h-full w-full object-cover"
           src={heroImage.src}
-          style={{ objectPosition: heroImage.objectPosition }}
+          style={getHeroImageStyle(heroImage)}
         />
       ) : (
         <div className="absolute inset-0 bg-[color:var(--inv-primary)]" />
@@ -286,6 +286,7 @@ function HeroTitle({ title }: { title: string }) {
 function resolveHeroImage(image?: WeddingInvitationContent["heroImage"]) {
   if (!image) {
     return {
+      cropZoom: 1,
       objectPosition: "center center",
       src: null,
     };
@@ -293,18 +294,42 @@ function resolveHeroImage(image?: WeddingInvitationContent["heroImage"]) {
 
   if (typeof image === "string") {
     return {
+      cropZoom: 1,
       objectPosition: "center center",
       src: image,
     };
   }
 
+  const cropZoom = clampCropZoom(image.cropZoom);
   const focalX = clampFocalPoint(image.focalX);
   const focalY = clampFocalPoint(image.focalY);
 
   return {
+    cropZoom,
     objectPosition: `${focalX}% ${focalY}%`,
     src: image.url ?? null,
   };
+}
+
+function getHeroImageStyle(image: {
+  cropZoom: number;
+  objectPosition: string;
+}): CSSProperties {
+  const transformOrigin = image.objectPosition;
+
+  return {
+    objectPosition: image.objectPosition,
+    transform: image.cropZoom > 1 ? `scale(${image.cropZoom})` : undefined,
+    transformOrigin,
+  };
+}
+
+function clampCropZoom(value?: number) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 1;
+  }
+
+  return Math.min(3, Math.max(1, value));
 }
 
 function clampFocalPoint(value?: number) {

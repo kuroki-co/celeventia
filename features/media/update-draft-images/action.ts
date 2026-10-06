@@ -9,6 +9,7 @@ import type { WeddingInvitationContent } from "@/invitation/renderer/types";
 import { createClient } from "@/shared/supabase/server";
 
 const focalSchema = z.object({
+  cropZoom: z.coerce.number().min(1).max(3).default(1),
   eventId: z.string().uuid(),
   focalX: z.coerce.number().min(0).max(100),
   focalY: z.coerce.number().min(0).max(100),
@@ -36,6 +37,7 @@ export async function updateHeroImageFocalPoint(
 ): Promise<DraftImageActionState> {
   const parsed = focalSchema.safeParse({
     eventId: formData.get("eventId"),
+    cropZoom: formData.get("cropZoom"),
     focalX: formData.get("focalX"),
     focalY: formData.get("focalY"),
   });
@@ -59,6 +61,7 @@ export async function updateHeroImageFocalPoint(
     ...event.content,
     heroImage: {
       ...event.content.heroImage,
+      cropZoom: parsed.data.cropZoom,
       focalX: parsed.data.focalX,
       focalY: parsed.data.focalY,
     },
