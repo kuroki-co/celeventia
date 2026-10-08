@@ -1,21 +1,33 @@
 /* eslint-disable @next/next/no-img-element */
 import Image from "next/image";
 import {
+  Camera,
+  ChevronDown,
   ExternalLink,
+  Heart,
   Landmark,
   Mail,
+  MapPin,
+  Music,
+  Sparkles,
+  Utensils,
   WalletCards,
 } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 
 import { invitationFontClassName } from "../invitation-fonts";
 import { GiftCopyAction } from "./GiftCopyAction";
+import { InvitationCountdown } from "./InvitationCountdown";
 import { InvitationEntryGate } from "./InvitationEntryGate";
 import { InvitationGallery } from "./InvitationGallery";
+import { InvitationMusicPlayer } from "./InvitationMusicPlayer";
+import { InvitationRsvpPreview } from "./InvitationRsvpPreview";
+import { InvitationSectionReveal } from "./InvitationSectionReveal";
 import {
   getInvitationPalette,
   getInvitationTheme,
 } from "../themes";
+import { buildEventStartIso } from "../calendar";
 import type {
   GiftMethod,
   InvitationLocation,
@@ -34,7 +46,9 @@ type WeddingInvitationProps = {
     maxGuests: number;
   } | null;
   children?: ReactNode;
+  collaborativeAlbumSlot?: ReactNode;
   entryPreviewKey?: number;
+  songSuggestionsSlot?: ReactNode;
 };
 
 type ThemePresentation = {
@@ -59,6 +73,7 @@ type ThemePresentation = {
   ornament: "ceremonial" | "classic" | "minimal";
   sectionClassName: string;
   showFloralCorners: boolean;
+  frame: string;
   usesCeremonialLayout: boolean;
 };
 
@@ -66,7 +81,9 @@ export function WeddingInvitation({
   entryPreviewKey = 0,
   event,
   mode,
+  collaborativeAlbumSlot,
   recipient,
+  songSuggestionsSlot,
   children,
 }: WeddingInvitationProps) {
   const theme = getInvitationTheme(event.themeId);
@@ -78,8 +95,18 @@ export function WeddingInvitation({
   const entryImage = resolveHeroImage(heroImage);
   const presentation = getThemePresentation(theme.frame);
   const usesCeremonialLayout = presentation.usesCeremonialLayout;
+  const mainMessageAfterHero = shouldRenderWelcomeMessage(
+    content.tagline,
+    event.mainInvitationMessage,
+  )
+    ? event.mainInvitationMessage
+    : null;
+  const sectionClassName = [
+    presentation.sectionClassName,
+    "invitation-reveal-item",
+  ].join(" ");
   const invitationBody = (
-    <>
+    <InvitationSectionReveal>
       <InvitationHero
         dateLabel={event.dateLabel}
         image={heroImage}
@@ -90,45 +117,56 @@ export function WeddingInvitation({
       />
 
       <div
+        id="detalles"
         className={[
           "mx-auto px-5 py-14 sm:px-8 lg:px-10 lg:py-20",
           presentation.contentClassName,
         ].join(" ")}
       >
+        <WelcomeSection
+          className={sectionClassName}
+          message={mainMessageAfterHero}
+          presentation={presentation}
+        />
         <FamilySection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           content={content.family}
           isTraditional={usesCeremonialLayout}
           presentation={presentation}
         />
         <SaveTheDateSection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           content={content.saveTheDate}
           dateLabel={event.dateLabel}
+          eventDate={event.eventDate}
+          eventTimezone={event.eventTimezone}
           isTraditional={usesCeremonialLayout}
+          location={event.mainLocationName}
+          mainLocationTime={event.mainLocationTime}
           presentation={presentation}
+          title={event.coupleName}
         />
         <LocationsSection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           locations={locations}
           presentation={presentation}
         />
         <TimelineSection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           isTraditional={usesCeremonialLayout}
           items={content.itinerary}
           presentation={presentation}
           title="Itinerario"
         />
         <DressCodeSection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           content={content.dressCode}
           isTraditional={usesCeremonialLayout}
           presentation={presentation}
         />
         {(children || mode === "preview") ? (
           <RsvpSection
-            className={presentation.sectionClassName}
+            className={sectionClassName}
             isTraditional={usesCeremonialLayout}
             presentation={presentation}
             recipient={recipient}
@@ -137,33 +175,45 @@ export function WeddingInvitation({
             {children}
           </RsvpSection>
         ) : null}
+        {songSuggestionsSlot ? (
+          <InvitationSlotSection
+            className={sectionClassName}
+            content={songSuggestionsSlot}
+          />
+        ) : null}
         <GiftsSection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           gifts={content.gifts}
           isTraditional={usesCeremonialLayout}
           presentation={presentation}
         />
+        {collaborativeAlbumSlot ? (
+          <InvitationSlotSection
+            className={sectionClassName}
+            content={collaborativeAlbumSlot}
+          />
+        ) : null}
         <GallerySection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           images={content.galleryImages}
           isTraditional={usesCeremonialLayout}
           presentation={presentation}
         />
         <StorySection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           isTraditional={usesCeremonialLayout}
           items={content.story}
           presentation={presentation}
         />
         <ClosingSection
-          className={presentation.sectionClassName}
+          className={sectionClassName}
           isTraditional={usesCeremonialLayout}
           message={content.closingMessage}
           presentation={presentation}
           title={event.coupleName}
         />
       </div>
-    </>
+    </InvitationSectionReveal>
   );
   return (
     <article
@@ -183,8 +233,7 @@ export function WeddingInvitation({
           "--inv-text": colors.text,
           "--inv-muted": colors.muted,
           "--inv-border": colors.border,
-          "--font-manrope": "var(--inv-font-sans)",
-          "--font-cormorant": "var(--inv-font-serif)",
+          ...getThemeFontVariables(theme.frame),
           background: colors.background,
           color: colors.text,
         } as CSSProperties
@@ -201,8 +250,21 @@ export function WeddingInvitation({
       >
         {invitationBody}
       </InvitationEntryGate>
+      {content.music?.enabled && content.music.audioUrl ? (
+        <InvitationMusicPlayer music={content.music} />
+      ) : null}
     </article>
   );
+}
+
+function InvitationSlotSection({
+  className,
+  content,
+}: {
+  className: string;
+  content: ReactNode;
+}) {
+  return <section className={className}>{content}</section>;
 }
 
 function InvitationHero({
@@ -240,6 +302,10 @@ function InvitationHero({
       <div className={presentation.heroOverlayClassName} />
       <div className={presentation.heroWashClassName} />
       <ThemeHeroDecorations presentation={presentation} />
+      <ThemeParticles
+        assetKey={presentation.assetKey}
+        frame={presentation.frame}
+      />
       <div className={presentation.heroContentClassName}>
         <p className={presentation.heroKickerClassName}>
           Nos casamos
@@ -260,6 +326,13 @@ function InvitationHero({
           </p>
         ) : null}
       </div>
+      <a
+        aria-label="Ir a los detalles de la invitacion"
+        className="absolute bottom-[max(1.25rem,env(safe-area-inset-bottom))] left-1/2 z-10 grid size-11 -translate-x-1/2 place-items-center rounded-full border border-[#FFF8EA]/38 bg-black/12 text-[#FFF8EA] shadow-[0_10px_28px_rgba(0,0,0,0.18)] backdrop-blur-sm transition hover:bg-black/18 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#FFF8EA] motion-reduce:transition-none"
+        href="#detalles"
+      >
+        <ChevronDown aria-hidden="true" className="size-5" />
+      </a>
     </section>
   );
 }
@@ -280,6 +353,37 @@ function HeroTitle({ title }: { title: string }) {
         <span className="block">{titleParts[1]}</span>
       </span>
     </>
+  );
+}
+
+function WelcomeSection({
+  className,
+  message,
+  presentation,
+}: {
+  className: string;
+  message?: string | null;
+  presentation: ThemePresentation;
+}) {
+  if (!message?.trim()) {
+    return null;
+  }
+
+  return (
+    <section className={className}>
+      <div className="mx-auto max-w-3xl text-center">
+        <p className="font-sans text-xs font-semibold uppercase tracking-[0.28em] text-[color:var(--inv-secondary)]">
+          Bienvenidos
+        </p>
+        <h2 className="mt-4 font-serif text-[2.55rem] font-normal leading-none text-[color:var(--inv-primary)] sm:text-[3.6rem]">
+          Nuestra invitacion
+        </h2>
+        <ThemeOrnament compact presentation={presentation} />
+        <p className="mx-auto mt-5 max-w-2xl whitespace-pre-line text-base leading-8 text-[color:var(--inv-muted)] sm:text-lg">
+          {message}
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -552,18 +656,34 @@ function SaveTheDateSection({
   className,
   content,
   dateLabel,
+  eventDate,
+  eventTimezone,
   isTraditional,
+  location,
+  mainLocationTime,
   presentation,
+  title,
 }: {
   className: string;
   content: WeddingInvitationContent["saveTheDate"];
   dateLabel: string;
+  eventDate?: string | null;
+  eventTimezone?: string | null;
   isTraditional: boolean;
+  location?: string | null;
+  mainLocationTime?: string | null;
   presentation: ThemePresentation;
+  title: string;
 }) {
   if (!content) {
     return null;
   }
+
+  const startIso = buildEventStartIso({
+    date: eventDate,
+    startTime: mainLocationTime,
+    timeZone: eventTimezone,
+  });
 
   if (isTraditional) {
     return (
@@ -603,6 +723,15 @@ function SaveTheDateSection({
             <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-[color:var(--inv-muted)] sm:text-base">
               {content.message ?? dateLabel}
             </p>
+            {startIso ? (
+              <InvitationCountdown
+                dateLabel={dateLabel}
+                description={content.message ?? undefined}
+                location={location}
+                startIso={startIso}
+                title={`Boda de ${title}`}
+              />
+            ) : null}
           </div>
         </div>
       </section>
@@ -631,6 +760,15 @@ function SaveTheDateSection({
           <p className="mx-auto mt-5 max-w-2xl text-center text-base leading-8 text-[color:var(--inv-muted)]">
             {content.message ?? dateLabel}
           </p>
+          {startIso ? (
+            <InvitationCountdown
+              dateLabel={dateLabel}
+              description={content.message ?? undefined}
+              location={location}
+              startIso={startIso}
+              title={`Boda de ${title}`}
+            />
+          ) : null}
         </div>
       </div>
     </section>
@@ -776,17 +914,14 @@ function TimelineSection({
             className="absolute left-1/2 top-3 bottom-3 w-px -translate-x-1/2 bg-[color:var(--inv-border)]/70"
           />
           <ol className="relative space-y-7 text-center sm:space-y-8">
-            {items.map((item) => (
+            {getOrderedTimelineItems(items).map((item) => (
               <li
                 className="relative mx-auto max-w-md bg-[color:var(--inv-bg)] px-4"
-                key={`${item.time ?? item.date}-${item.title}`}
+                key={item.id ?? `${item.time ?? item.date}-${item.title}`}
               >
-                <span
-                  aria-hidden="true"
-                  className="mx-auto mb-3 block size-3 rotate-45 border border-[color:var(--inv-accent)] bg-[color:var(--inv-bg)] shadow-[0_0_0_5px_var(--inv-bg)]"
-                />
+                <TimelineIcon item={item} variant="traditional" />
                 <p className="text-[0.72rem] font-medium uppercase tracking-[0.18em] text-[color:var(--inv-secondary)] sm:text-xs">
-                  {item.time ?? item.date}
+                  {formatTimelineMeta(item)}
                 </p>
                 <h3 className="mt-2 font-serif text-[2rem] font-normal leading-none text-[color:var(--inv-primary)] sm:text-[2.45rem]">
                   {item.title}
@@ -813,14 +948,17 @@ function TimelineSection({
         title={title}
       />
       <div className="mt-10 grid gap-4">
-        {items.map((item) => (
+        {getOrderedTimelineItems(items).map((item) => (
           <div
             className="grid gap-3 border-t border-[color:var(--inv-border)] pt-5 sm:grid-cols-[140px_minmax(0,1fr)]"
-            key={`${item.time ?? item.date}-${item.title}`}
+            key={item.id ?? `${item.time ?? item.date}-${item.title}`}
           >
-            <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[color:var(--inv-secondary)]">
-              {item.time ?? item.date}
-            </p>
+            <div className="flex items-center gap-3 sm:block">
+              <TimelineIcon item={item} variant="simple" />
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[color:var(--inv-secondary)]">
+                {formatTimelineMeta(item)}
+              </p>
+            </div>
             <div>
               <h3 className="font-serif text-3xl font-semibold leading-tight text-[color:var(--inv-primary)]">
                 {item.title}
@@ -1207,6 +1345,83 @@ function AvoidColorsPanel({
   );
 }
 
+function getOrderedTimelineItems(items: InvitationTimelineItem[]) {
+  return [...items].sort(
+    (first, second) => (first.order ?? 0) - (second.order ?? 0),
+  );
+}
+
+function formatTimelineMeta(item: InvitationTimelineItem) {
+  const timeOrDate = item.time ?? item.date ?? "";
+
+  if (!item.dayOffset) {
+    return timeOrDate;
+  }
+
+  const dayLabel = item.dayOffset === 1 ? "Dia siguiente" : `+${item.dayOffset} dias`;
+
+  return [timeOrDate, dayLabel].filter(Boolean).join(" - ");
+}
+
+function TimelineIcon({
+  item,
+  variant,
+}: {
+  item: InvitationTimelineItem;
+  variant: "simple" | "traditional";
+}) {
+  const icon = renderTimelineIcon(item.iconKey);
+
+  if (!icon) {
+    if (variant === "traditional") {
+      return (
+        <span
+          aria-hidden="true"
+          className="mx-auto mb-3 block size-3 rotate-45 border border-[color:var(--inv-accent)] bg-[color:var(--inv-bg)] shadow-[0_0_0_5px_var(--inv-bg)]"
+        />
+      );
+    }
+
+    return null;
+  }
+
+  return (
+    <span
+      aria-hidden="true"
+      className={[
+        "grid shrink-0 place-items-center border border-[color:var(--inv-border)] bg-[color:var(--inv-surface)] text-[color:var(--inv-secondary)]",
+        variant === "traditional"
+          ? "mx-auto mb-3 size-9 rounded-full shadow-[0_0_0_5px_var(--inv-bg)]"
+          : "size-9 rounded-full sm:mb-3",
+      ].join(" ")}
+    >
+      {icon}
+    </span>
+  );
+}
+
+function renderTimelineIcon(iconKey?: InvitationTimelineItem["iconKey"]) {
+  const className = "size-4";
+  const strokeWidth = 1.6;
+
+  switch (iconKey) {
+    case "camera":
+      return <Camera className={className} strokeWidth={strokeWidth} />;
+    case "heart":
+      return <Heart className={className} strokeWidth={strokeWidth} />;
+    case "mapPin":
+      return <MapPin className={className} strokeWidth={strokeWidth} />;
+    case "music":
+      return <Music className={className} strokeWidth={strokeWidth} />;
+    case "sparkles":
+      return <Sparkles className={className} strokeWidth={strokeWidth} />;
+    case "utensils":
+      return <Utensils className={className} strokeWidth={strokeWidth} />;
+    default:
+      return null;
+  }
+}
+
 function isEditorialTheme(presentation: ThemePresentation) {
   return presentation.assetKey === "classic" || presentation.assetKey === "terra";
 }
@@ -1256,6 +1471,13 @@ function RsvpSection({
         ) : null}
         {children}
         {showPreviewFallback ? (
+          <InvitationRsvpPreview
+            displayName={recipient?.displayName}
+            maxGuests={recipient?.maxGuests}
+          />
+        ) : null}
+        {/*
+        {false ? (
           <div className="mx-auto mt-7 max-w-2xl border border-[color:var(--inv-border)]/70 bg-[color:var(--inv-primary)]/[0.04] p-4 sm:p-5">
             <p className="mb-4 text-xs font-medium uppercase tracking-[0.16em] text-[color:var(--inv-muted)]">
               Vista de ejemplo del formulario
@@ -1276,6 +1498,7 @@ function RsvpSection({
             </div>
           </div>
         ) : null}
+        */}
       </div>
     </section>
   );
@@ -1352,6 +1575,7 @@ function GiftsSection({
     const financialGifts = giftOptions.filter(
       (gift) =>
         gift.kind === "yape" ||
+        gift.kind === "plin" ||
         gift.kind === "bankTransfer" ||
         gift.kind === "externalRegistry",
     );
@@ -1499,7 +1723,7 @@ function EditorialGiftMethod({ gift }: { gift: GiftMethod }) {
 }
 
 function GiftMethodDetails({ gift }: { gift: GiftMethod }) {
-  if (gift.kind === "yape") {
+  if (gift.kind === "yape" || gift.kind === "plin") {
     return (
       <div className="mt-3 min-h-[4.75rem] text-sm leading-7 text-[color:var(--inv-muted)]">
         {gift.owner ? (
@@ -1588,6 +1812,10 @@ function inferGiftKind(title: string): NonNullable<GiftMethod["kind"]> {
     return "yape";
   }
 
+  if (normalized.includes("plin")) {
+    return "plin";
+  }
+
   if (
     normalized.includes("transferencia") ||
     normalized.includes("banco") ||
@@ -1643,7 +1871,7 @@ function parseBankDetails(value: string) {
 }
 
 function getGiftCopyActions(gift: GiftMethod) {
-  if (gift.kind === "yape" && gift.phone) {
+  if ((gift.kind === "yape" || gift.kind === "plin") && gift.phone) {
     return [{ label: "Copiar número", value: gift.phone }];
   }
 
@@ -1855,7 +2083,15 @@ function getStoryDateLabel(
 function getStoryImage(
   item: NonNullable<WeddingInvitationContent["story"]>[number],
 ) {
-  return item.imageUrl ?? item.image;
+  if (item.imageUrl) {
+    return item.imageUrl;
+  }
+
+  if (!item.image) {
+    return undefined;
+  }
+
+  return typeof item.image === "string" ? item.image : item.image.url;
 }
 
 function ClosingSection({
@@ -1981,6 +2217,21 @@ function normalizeContent(event: WeddingInvitationEvent) {
   return event as WeddingInvitationContent;
 }
 
+function shouldRenderWelcomeMessage(
+  tagline?: string | null,
+  message?: string | null,
+) {
+  if (!tagline?.trim() || !message?.trim()) {
+    return false;
+  }
+
+  return normalizeComparableText(tagline) !== normalizeComparableText(message);
+}
+
+function normalizeComparableText(value: string) {
+  return value.trim().replace(/\s+/g, " ").toLocaleLowerCase("es-PE");
+}
+
 function getLocations(
   event: WeddingInvitationEvent,
   content: WeddingInvitationContent,
@@ -2062,6 +2313,7 @@ function getThemePresentation(frame: string): ThemePresentation {
     ornament: "ceremonial",
     sectionClassName: getSectionClassName(frame),
     showFloralCorners: true,
+    frame,
     usesCeremonialLayout: true,
   };
 
@@ -2079,7 +2331,7 @@ function getThemePresentation(frame: string): ThemePresentation {
       heroOverlayClassName:
         "absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(0,0,0,0.42),rgba(0,0,0,0.16)_52%,rgba(0,0,0,0.32)_100%)]",
       heroTitleClassName:
-        "mx-auto mt-8 max-w-[54rem] text-balance font-serif text-[clamp(3.65rem,8.4vw,6.85rem)] font-normal leading-[0.9] text-[#FFF8EA] drop-shadow-[0_3px_14px_rgba(0,0,0,0.24)] sm:leading-[0.92]",
+        "mx-auto mt-8 max-w-[54rem] text-balance font-serif [font-family:var(--inv-font-hero-active)] text-[clamp(3.65rem,8.4vw,6.85rem)] font-normal leading-[0.9] text-[#FFF8EA] drop-shadow-[0_3px_14px_rgba(0,0,0,0.24)] sm:leading-[0.92]",
       heroRuleClassName: "mt-9 h-px w-28 bg-[#FFF8EA]/58 sm:w-36",
       heroWashClassName:
         "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.18),transparent_25%,transparent_64%,rgba(0,0,0,0.35))]",
@@ -2104,16 +2356,16 @@ function getThemePresentation(frame: string): ThemePresentation {
       heroContentClassName:
         "relative z-10 mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[46rem] flex-col items-center justify-end pb-[max(5.5rem,env(safe-area-inset-bottom))] pt-16 text-center text-white sm:pb-20",
       heroDateClassName:
-        "mt-6 font-sans text-[0.8rem] font-semibold uppercase tracking-[0.24em] text-[#FFF8EA]/82 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-[0.92rem]",
+        "mt-6 font-sans [font-family:var(--inv-font-display-active)] text-[0.8rem] font-semibold uppercase text-[#FFF8EA]/82 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)] sm:text-[0.92rem]",
       heroKickerClassName:
-        "font-sans text-[0.64rem] font-semibold uppercase tracking-[0.34em] text-[#FFF8EA]/76 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.7rem]",
+        "font-sans [font-family:var(--inv-font-display-active)] text-[0.64rem] font-semibold uppercase text-[#FFF8EA]/76 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.7rem]",
       heroMessageClassName:
         "mx-auto mt-4 max-w-[34rem] font-sans text-sm font-medium leading-7 text-[#FFF8EA]/78 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.96rem]",
       heroOverlayClassName:
         "absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.06)_0%,rgba(0,0,0,0.12)_44%,rgba(0,0,0,0.68)_100%)]",
       heroRuleClassName: "mt-6 h-px w-20 bg-[#FFF8EA]/50 sm:w-28",
       heroTitleClassName:
-        "mx-auto mt-5 max-w-[42rem] text-balance font-serif text-[clamp(2.75rem,6.2vw,4.85rem)] font-normal leading-[0.94] text-[#FFF8EA] drop-shadow-[0_3px_16px_rgba(0,0,0,0.34)]",
+        "mx-auto mt-5 max-w-[42rem] text-balance font-serif [font-family:var(--inv-font-hero-active)] text-[clamp(3.35rem,7vw,5.8rem)] font-normal leading-[0.9] text-[#FFF8EA] drop-shadow-[0_3px_16px_rgba(0,0,0,0.34)]",
       heroWashClassName:
         "absolute inset-x-0 bottom-0 h-[52%] bg-[linear-gradient(180deg,transparent,rgba(0,0,0,0.34)_58%,rgba(0,0,0,0.18))]",
       imageClassName: "grayscale-[12%]",
@@ -2141,16 +2393,16 @@ function getThemePresentation(frame: string): ThemePresentation {
       heroContentClassName:
         "relative z-10 mx-auto flex min-h-[calc(100svh-5rem)] w-full max-w-[44rem] flex-col items-center justify-end pb-[max(6rem,env(safe-area-inset-bottom))] pt-16 text-center text-white sm:pb-24",
       heroDateClassName:
-        "mt-6 font-sans text-[0.8rem] font-semibold uppercase tracking-[0.24em] text-[#FFF8EA]/82 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.92rem]",
+        "mt-6 font-sans [font-family:var(--inv-font-serif-active)] text-[0.8rem] font-semibold uppercase text-[#FFF8EA]/82 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.92rem]",
       heroKickerClassName:
-        "font-sans text-[0.64rem] font-semibold uppercase tracking-[0.34em] text-[#FFF8EA]/76 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.7rem]",
+        "font-sans [font-family:var(--inv-font-display-active)] text-[0.64rem] font-semibold uppercase text-[#FFF8EA]/76 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.7rem]",
       heroMessageClassName:
         "mx-auto mt-4 max-w-[31rem] font-sans text-sm font-medium leading-7 text-[#FFF8EA]/78 drop-shadow-[0_2px_10px_rgba(0,0,0,0.28)] sm:text-[0.96rem]",
       heroOverlayClassName:
         "absolute inset-0 bg-[radial-gradient(circle_at_50%_28%,rgba(44,33,29,0.08),transparent_34%),linear-gradient(180deg,rgba(26,23,18,0.04)_0%,rgba(38,31,26,0.1)_42%,rgba(38,31,26,0.68)_100%)]",
       heroRuleClassName: "mt-6 h-px w-16 bg-[#FFF8EA]/42 sm:w-24",
       heroTitleClassName:
-        "mx-auto mt-5 max-w-[40rem] text-balance font-serif text-[clamp(2.8rem,6.4vw,5rem)] font-normal leading-[0.94] text-[#FFF8EA] drop-shadow-[0_3px_16px_rgba(0,0,0,0.34)]",
+        "mx-auto mt-5 max-w-[40rem] text-balance font-serif [font-family:var(--inv-font-hero-active)] text-[clamp(2.65rem,6.2vw,4.85rem)] font-medium uppercase leading-[1.02] text-[#FFF8EA] drop-shadow-[0_3px_16px_rgba(0,0,0,0.34)]",
       heroWashClassName:
         "absolute inset-x-0 bottom-0 h-[55%] bg-[linear-gradient(180deg,transparent,rgba(37,30,24,0.32)_58%,rgba(37,30,24,0.16))]",
       imageClassName: "rounded-t-[32px]",
@@ -2200,6 +2452,46 @@ function getThemePresentation(frame: string): ThemePresentation {
   return base;
 }
 
+function getThemeFontVariables(frame: string): CSSProperties {
+  if (frame === "classic") {
+    return {
+      "--font-cormorant": "var(--inv-font-serif)",
+      "--font-manrope": "var(--inv-font-sans)",
+      "--inv-font-display-active": "var(--inv-font-display)",
+      "--inv-font-hero-active": "var(--inv-font-script-classic)",
+      "--inv-font-serif-active": "var(--inv-font-serif)",
+    } as CSSProperties;
+  }
+
+  if (frame === "organic") {
+    return {
+      "--font-cormorant": "var(--inv-font-literary)",
+      "--font-manrope": "var(--inv-font-sans)",
+      "--inv-font-display-active": "var(--inv-font-display)",
+      "--inv-font-hero-active": "var(--inv-font-display)",
+      "--inv-font-serif-active": "var(--inv-font-literary)",
+    } as CSSProperties;
+  }
+
+  if (frame === "ornate") {
+    return {
+      "--font-cormorant": "var(--inv-font-literary)",
+      "--font-manrope": "var(--inv-font-sans)",
+      "--inv-font-display-active": "var(--inv-font-literary)",
+      "--inv-font-hero-active": "var(--inv-font-script-versalles)",
+      "--inv-font-serif-active": "var(--inv-font-literary)",
+    } as CSSProperties;
+  }
+
+  return {
+    "--font-cormorant": "var(--inv-font-serif)",
+    "--font-manrope": "var(--inv-font-sans)",
+    "--inv-font-display-active": "var(--inv-font-serif)",
+    "--inv-font-hero-active": "var(--inv-font-serif)",
+    "--inv-font-serif-active": "var(--inv-font-serif)",
+  } as CSSProperties;
+}
+
 function ThemeHeroDecorations({
   presentation,
 }: {
@@ -2242,6 +2534,14 @@ function ThemeHeroDecorations({
           priority={false}
           src="/wedding-themes/versalles/ornaments/pastel-floral-corner-bottom.png"
           width={256}
+        />
+        <MaskedThemeAsset
+          className="absolute bottom-10 left-5 z-[2] h-28 w-28 text-[#FFF8EA]/34 sm:bottom-14 sm:left-8 sm:h-40 sm:w-40"
+          src="/wedding-themes/versalles/ornaments/floral-line-left.svg"
+        />
+        <MaskedThemeAsset
+          className="absolute right-5 top-28 z-[2] h-28 w-28 text-[#FFF8EA]/28 sm:right-8 sm:top-36 sm:h-40 sm:w-40"
+          src="/wedding-themes/versalles/ornaments/floral-line-right.svg"
         />
       </>
     );
@@ -2301,6 +2601,14 @@ function ThemeHeroDecorations({
             opacity="0.32"
           />
         </svg>
+        <MaskedThemeAsset
+          className="absolute bottom-16 left-2 z-[1] h-40 w-24 text-[#FFF8EA]/28 sm:bottom-20 sm:left-5 sm:h-56 sm:w-36"
+          src="/wedding-themes/terra/ornaments/botanical-line-left.svg"
+        />
+        <MaskedThemeAsset
+          className="absolute bottom-14 right-2 z-[1] h-40 w-24 text-[#FFF8EA]/32 sm:bottom-16 sm:right-5 sm:h-56 sm:w-36"
+          src="/wedding-themes/terra/ornaments/botanical-line-right.svg"
+        />
       </>
     );
   }
@@ -2310,6 +2618,149 @@ function ThemeHeroDecorations({
   }
 
   return null;
+}
+
+function MaskedThemeAsset({
+  className,
+  src,
+}: {
+  className: string;
+  src: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={["pointer-events-none bg-current", className].join(" ")}
+      style={
+        {
+          WebkitMaskImage: `url(${src})`,
+          WebkitMaskPosition: "center",
+          WebkitMaskRepeat: "no-repeat",
+          WebkitMaskSize: "contain",
+          maskImage: `url(${src})`,
+          maskPosition: "center",
+          maskRepeat: "no-repeat",
+          maskSize: "contain",
+        } as CSSProperties
+      }
+    />
+  );
+}
+
+function ThemeParticles({
+  assetKey,
+  frame,
+}: {
+  assetKey: ThemePresentation["assetKey"];
+  frame: string;
+}) {
+  const config = getParticleConfig(assetKey, frame);
+
+  if (!config) {
+    return null;
+  }
+
+  return (
+    <div
+      aria-hidden="true"
+      className="invitation-particles pointer-events-none absolute inset-0 z-[3] overflow-hidden"
+    >
+      {config.items.map((item, index) => (
+        <span
+          className={[
+            "invitation-particle absolute block bg-current",
+            index >= config.mobileVisibleCount
+              ? "invitation-particle-mobile-hidden"
+              : "",
+          ].join(" ")}
+          key={`${config.src}-${index}`}
+          style={
+            {
+              WebkitMaskImage: `url(${config.src})`,
+              WebkitMaskPosition: "center",
+              WebkitMaskRepeat: "no-repeat",
+              WebkitMaskSize: "contain",
+              color: item.color,
+              height: item.size,
+              left: item.left,
+              maskImage: `url(${config.src})`,
+              maskPosition: "center",
+              maskRepeat: "no-repeat",
+              maskSize: "contain",
+              top: item.top,
+              width: item.size,
+              "--particle-delay": item.delay,
+              "--particle-drift-x": item.driftX,
+              "--particle-duration": item.duration,
+              "--particle-opacity": item.opacity,
+              "--particle-rotate-end": item.rotateEnd,
+              "--particle-rotate-start": item.rotateStart,
+            } as CSSProperties
+          }
+        />
+      ))}
+    </div>
+  );
+}
+
+function getParticleConfig(
+  assetKey: ThemePresentation["assetKey"],
+  frame: string,
+) {
+  if (frame === "minimal") {
+    return null;
+  }
+
+  if (assetKey === "terra") {
+    return {
+      src: "/wedding-themes/shared/particles/leaf.svg",
+      items: createParticleItems(6, "color-mix(in_srgb,var(--inv-accent)_80%,var(--inv-primary))", 10),
+      mobileVisibleCount: 3,
+    };
+  }
+
+  if (assetKey === "versalles") {
+    return {
+      src: "/wedding-themes/shared/particles/petal.svg",
+      items: createParticleItems(8, "color-mix(in_srgb,var(--inv-accent)_72%,#FFF8EA)", 8),
+      mobileVisibleCount: 4,
+    };
+  }
+
+  if (assetKey === "classic") {
+    return {
+      src: "/wedding-themes/shared/particles/petal.svg",
+      items: createParticleItems(8, "color-mix(in_srgb,var(--inv-secondary)_55%,#FFF8EA)", 7),
+      mobileVisibleCount: 4,
+    };
+  }
+
+  if (assetKey === null) {
+    return {
+      src: "/wedding-themes/shared/particles/sparkle.svg",
+      items: createParticleItems(4, "color-mix(in_srgb,var(--inv-accent)_70%,#FFF8EA)", 6),
+      mobileVisibleCount: 2,
+    };
+  }
+
+  return null;
+}
+
+function createParticleItems(count: number, color: string, baseSize: number) {
+  const horizontal = [8, 22, 36, 51, 64, 78, 88, 16];
+
+  return Array.from({ length: count }, (_, index) => ({
+    color,
+    delay: `${index * -2.7}s`,
+    driftX: `${index % 2 === 0 ? 18 + index * 2 : -18 - index}px`,
+    duration: `${18 + (index % 5) * 2}s`,
+    left: `${horizontal[index % horizontal.length]}%`,
+    opacity: `${0.14 + (index % 3) * 0.04}`,
+    rotateEnd: `${120 + index * 28}deg`,
+    rotateStart: `${index * 31}deg`,
+    size: `${baseSize + (index % 4) * 2}px`,
+    top: `${-10 - (index % 3) * 8}%`,
+  }));
 }
 
 function ThemeOrnament({

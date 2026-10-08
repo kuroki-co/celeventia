@@ -31,3 +31,65 @@ body {
   color: var(--foreground);
   font-family: var(--font-manrope), Arial, Helvetica, sans-serif;
 }
+
+@keyframes invitation-particle-drift {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -14%, 0) rotate(var(--particle-rotate-start, 0deg));
+  }
+  12% {
+    opacity: var(--particle-opacity, 0.22);
+  }
+  88% {
+    opacity: var(--particle-opacity, 0.22);
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--particle-drift-x, 18px), 118%, 0)
+      rotate(var(--particle-rotate-end, 140deg));
+  }
+}
+
+.invitation-particle {
+  animation: invitation-particle-drift var(--particle-duration, 22s) linear infinite;
+  animation-delay: var(--particle-delay, 0s);
+}
+
+.invitation-particles.is-particle-layer-paused .invitation-particle,
+.invitation-reveal-root.is-document-hidden .invitation-particle {
+  animation-play-state: paused;
+}
+
+@media (max-width: 639px) {
+  .invitation-particle-mobile-hidden {
+    display: none;
+  }
+}
+
+.invitation-reveal-root.is-reveal-ready .invitation-reveal-item {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+  transition:
+    opacity 560ms ease,
+    transform 560ms ease;
+  will-change: opacity, transform;
+}
+
+.invitation-reveal-root.is-reveal-ready .invitation-reveal-item.is-visible {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invitation-particle {
+    animation: none;
+    opacity: 0;
+  }
+
+  .invitation-reveal-root.is-reveal-ready .invitation-reveal-item {
+    opacity: 1;
+    transform: none;
+    transition: none;
+    will-change: auto;
+  }
+}

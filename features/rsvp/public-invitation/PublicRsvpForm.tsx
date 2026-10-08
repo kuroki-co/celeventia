@@ -140,7 +140,7 @@ export function PublicRsvpForm({ data, slug, token }: PublicRsvpFormProps) {
                 ¿Cuántas personas asistirán?
               </span>
               <select
-                className="mt-3 min-h-12 w-full border border-[color:var(--inv-border)] bg-transparent px-4 text-center text-sm font-semibold text-[color:var(--inv-text)] outline-none transition-colors focus:border-[color:var(--inv-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
+                className="mt-3 min-h-12 w-full appearance-none border border-[color:var(--inv-border)] bg-[color:var(--inv-surface)]/82 bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%2216%22%20height=%2216%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%238E6C88%22%20stroke-width=%222.2%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22m6%209%206%206%206-6%22/%3E%3C/svg%3E')] bg-[position:right_1rem_center] bg-no-repeat px-4 pr-11 text-center text-sm font-semibold text-[color:var(--inv-text)] outline-none transition-colors focus:border-[color:var(--inv-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
                 name="attendeeCount"
                 onChange={(event) =>
                   setAttendeeCount(Number(event.target.value))
@@ -173,7 +173,7 @@ export function PublicRsvpForm({ data, slug, token }: PublicRsvpFormProps) {
                   Asistente {index + 1}
                 </span>
                 <input
-                  className="min-h-12 w-full border border-[color:var(--inv-border)] bg-transparent px-4 text-sm text-[color:var(--inv-text)] outline-none transition-colors placeholder:text-[color:var(--inv-muted)] focus:border-[color:var(--inv-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
+                  className="min-h-12 w-full border border-[color:var(--inv-border)] bg-[color:var(--inv-surface)]/82 px-4 text-sm font-medium text-[color:var(--inv-text)] outline-none transition-colors placeholder:text-[color:var(--inv-muted)] focus:border-[color:var(--inv-secondary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--inv-secondary)]"
                   name="attendeeNames"
                   onChange={(event) =>
                     updateAttendeeName(index, event.target.value)

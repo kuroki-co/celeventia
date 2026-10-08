@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
+import { PublicAlbumUploadForm } from "@/features/album/submit-photo/PublicAlbumUploadForm";
 import { getPublicInvitation } from "@/features/rsvp/public-invitation/data";
+import { PublicSongSuggestionForm } from "@/features/music/suggest-song/PublicSongSuggestionForm";
 import { PublicRsvpForm } from "@/features/rsvp/public-invitation/PublicRsvpForm";
 import { WeddingInvitation } from "@/invitation/renderer/WeddingInvitation";
 import { createClient } from "@/shared/supabase/server";
@@ -45,6 +47,22 @@ export default async function PublicInvitationPage({
       event={data.event}
       mode="public"
       recipient={data.recipient}
+      collaborativeAlbumSlot={
+        data.event.collaborativeAlbum?.enabled ? (
+          <PublicAlbumUploadForm
+            config={data.event.collaborativeAlbum}
+            slug={slug}
+          />
+        ) : null
+      }
+      songSuggestionsSlot={
+        data.event.songSuggestions?.enabled ? (
+          <PublicSongSuggestionForm
+            config={data.event.songSuggestions}
+            slug={slug}
+          />
+        ) : null
+      }
     >
       {rsvpData ? (
         <PublicRsvpForm data={rsvpData} slug={slug} token={rsvpData.token} />

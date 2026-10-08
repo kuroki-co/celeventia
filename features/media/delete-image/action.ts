@@ -58,6 +58,14 @@ export async function deleteInvitationImage(mediaId: string) {
           }
         : location,
     ),
+    story: event.content.story?.map((item) =>
+      typeof item.image === "object" && item.image?.id === data.id
+        ? {
+            ...item,
+            image: undefined,
+          }
+        : item,
+    ),
   };
 
   const { data: updatedEvent, error: updateError } = await supabase

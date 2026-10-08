@@ -36,6 +36,9 @@ export async function publishInvitation(): Promise<PublishInvitationState> {
   const snapshot = {
     content,
     coupleName: event.coupleName,
+    eventDate: event.eventDate,
+    eventTimezone: event.eventTimezone,
+    rsvpDeadline: event.rsvpDeadline,
     dateLabel: event.dateLabel,
     mainInvitationMessage: event.mainInvitationMessage,
     mainLocationName: event.mainLocationName,

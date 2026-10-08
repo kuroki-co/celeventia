@@ -1,8 +1,11 @@
 "use client";
 
-import { useActionState } from "react";
+import { Trash2 } from "lucide-react";
+import { useActionState, useState } from "react";
+import { useTransition } from "react";
 import { useFormStatus } from "react-dom";
 
+import { deleteRecipient } from "../delete-recipient/action";
 import type { InvitationRecipient } from "../list-recipients/types";
 import { updateRecipient, type UpdateRecipientState } from "./action";
 
@@ -14,16 +17,37 @@ export function UpdateRecipientForm({
   recipient: InvitationRecipient;
 }) {
   const [state, formAction] = useActionState(updateRecipient, initialState);
+  const [deleteMessage, setDeleteMessage] = useState("");
+  const [isDeleting, startDeleteTransition] = useTransition();
   const values = state.values;
 
+  function confirmAndDelete() {
+    const rsvpWarning = recipient.response
+      ? " Tambien se eliminara su RSVP actual."
+      : "";
+    const confirmed = window.confirm(
+      `Eliminar a ${recipient.displayName}? Su enlace dejara de funcionar.${rsvpWarning}`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setDeleteMessage("Eliminando...");
+    startDeleteTransition(async () => {
+      const result = await deleteRecipient(recipient.id);
+      setDeleteMessage(result.error ?? result.success ?? "");
+    });
+  }
+
   return (
-    <details className="mt-4 rounded-2xl border border-midnight-navy/10 bg-porcelain p-3">
-      <summary className="cursor-pointer text-sm font-semibold text-muted-mauve">
+    <details className="w-full rounded-2xl border border-midnight-navy/10 bg-white p-3 shadow-[0_8px_24px_rgba(16,42,67,0.035)]">
+      <summary className="cursor-pointer text-sm font-semibold text-muted-mauve marker:text-muted-mauve">
         Editar invitado
       </summary>
-      <form action={formAction} className="mt-4 grid gap-3">
+      <form action={formAction} className="mt-4 grid gap-4">
         <input name="recipientId" type="hidden" value={recipient.id} />
-        <div className="grid gap-3 md:grid-cols-[1.2fr_0.9fr_120px]">
+        <div className="grid items-start gap-3 lg:grid-cols-[minmax(220px,1.2fr)_minmax(220px,0.9fr)_120px]">
           <TextField
             defaultValue={values?.displayName ?? recipient.displayName}
             error={state.fieldErrors?.displayName}
@@ -50,17 +74,39 @@ export function UpdateRecipientForm({
             type="number"
           />
         </div>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p
+        <div className="flex flex-col gap-3 border-t border-midnight-navy/8 pt-3 sm:flex-row sm:items-center sm:justify-between">
+          <div
             aria-live="polite"
-            className={[
-              "text-sm font-semibold",
-              state.error ? "text-[#8A3A3A]" : "text-[#24523D]",
-            ].join(" ")}
+            className="min-h-5 text-sm font-semibold"
           >
-            {state.error ?? state.success ?? ""}
-          </p>
-          <SubmitButton />
+            {state.error || state.success ? (
+              <p className={state.error ? "text-[#8A3A3A]" : "text-[#24523D]"}>
+                {state.error ?? state.success}
+              </p>
+            ) : deleteMessage ? (
+              <p
+                className={
+                  deleteMessage.startsWith("No ")
+                    ? "text-[#8A3A3A]"
+                    : "text-[#24523D]"
+                }
+              >
+                {deleteMessage}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+            <button
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-[#8A3A3A]/20 px-4 text-sm font-semibold text-[#8A3A3A] transition hover:bg-[#8A3A3A]/5 disabled:cursor-wait disabled:opacity-50"
+              disabled={isDeleting}
+              onClick={confirmAndDelete}
+              type="button"
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              {isDeleting ? "Eliminando..." : "Eliminar"}
+            </button>
+            <SubmitButton />
+          </div>
         </div>
       </form>
     </details>
@@ -97,7 +143,7 @@ function TextField({
     .join(" ");
 
   return (
-    <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
+    <label className="grid content-start gap-2 text-sm font-semibold text-midnight-navy">
       {label}
       <input
         aria-describedby={describedBy || undefined}
@@ -149,4 +195,4 @@ function SubmitButton() {
 }
 
 const inputClassName =
-  "min-h-10 rounded-2xl border border-midnight-navy/10 bg-white px-3 text-sm text-midnight-navy outline-none transition-colors focus:border-muted-mauve";
+  "h-11 w-full rounded-2xl border border-midnight-navy/12 bg-white px-4 text-sm font-medium text-midnight-navy shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none transition placeholder:text-midnight-navy/38 hover:border-midnight-navy/22 focus:border-muted-mauve focus:ring-4 focus:ring-muted-mauve/10";

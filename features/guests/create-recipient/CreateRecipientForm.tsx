@@ -113,7 +113,7 @@ function TextField({
       <input
         aria-describedby={describedBy || undefined}
         aria-invalid={Boolean(error)}
-        className="mt-2 min-h-11 w-full rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition-colors placeholder:text-midnight-navy/35 focus:border-muted-mauve aria-invalid:border-[#8A3A3A]"
+        className="mt-2 min-h-11 w-full rounded-2xl border border-midnight-navy/12 bg-white px-4 text-sm font-medium text-midnight-navy shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none transition placeholder:text-midnight-navy/38 hover:border-midnight-navy/22 focus:border-muted-mauve focus:ring-4 focus:ring-muted-mauve/10 aria-invalid:border-[#8A3A3A]"
         defaultValue={defaultValue}
         inputMode={inputMode}
         key={`${name}-${defaultValue}`}

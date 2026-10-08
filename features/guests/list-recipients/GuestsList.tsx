@@ -1,10 +1,7 @@
 "use client";
 
-import { Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
-import { useTransition } from "react";
 
-import { deleteRecipient } from "../delete-recipient/action";
 import { RecipientShareActions } from "../share-via-whatsapp/RecipientShareActions";
 import { UpdateRecipientForm } from "../update-recipient/UpdateRecipientForm";
 import {
@@ -61,7 +58,7 @@ export function GuestsList({ isPublished, recipients }: GuestsListProps) {
         <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
           Buscar
           <input
-            className="min-h-11 rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition focus:border-muted-mauve"
+            className="min-h-11 rounded-2xl border border-midnight-navy/12 bg-white px-4 text-sm font-medium text-midnight-navy shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none transition placeholder:text-midnight-navy/38 hover:border-midnight-navy/22 focus:border-muted-mauve focus:ring-4 focus:ring-muted-mauve/10"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Nombre o teléfono"
             value={query}
@@ -70,7 +67,7 @@ export function GuestsList({ isPublished, recipients }: GuestsListProps) {
         <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
           Estado
           <select
-            className="min-h-11 rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition focus:border-muted-mauve"
+            className="min-h-11 appearance-none rounded-2xl border border-midnight-navy/12 bg-white bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%2216%22%20height=%2216%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%238E6C88%22%20stroke-width=%222.2%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22m6%209%206%206%206-6%22/%3E%3C/svg%3E')] bg-[position:right_1rem_center] bg-no-repeat px-4 pr-11 text-sm font-medium text-midnight-navy shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none transition hover:border-midnight-navy/22 focus:border-muted-mauve focus:ring-4 focus:ring-muted-mauve/10"
             onChange={(event) => setFilter(event.target.value as FilterValue)}
             value={filter}
           >
@@ -160,9 +157,8 @@ function RecipientCard({
               {recipient.attendeeNames.join(", ")}
             </p>
           ) : null}
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="mt-4">
             <UpdateRecipientForm recipient={recipient} />
-            <DeleteRecipientButton recipient={recipient} />
           </div>
         </div>
 
@@ -174,56 +170,5 @@ function RecipientCard({
         </div>
       </div>
     </article>
-  );
-}
-
-function DeleteRecipientButton({
-  recipient,
-}: {
-  recipient: InvitationRecipient;
-}) {
-  const [message, setMessage] = useState("");
-  const [isPending, startTransition] = useTransition();
-
-  function confirmAndDelete() {
-    const rsvpWarning = recipient.response
-      ? " También se eliminará su RSVP actual."
-      : "";
-    const confirmed = window.confirm(
-      `¿Eliminar a ${recipient.displayName}? Su enlace dejara de funcionar.${rsvpWarning}`,
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
-    setMessage("Eliminando...");
-    startTransition(async () => {
-      const result = await deleteRecipient(recipient.id);
-      setMessage(result.error ?? result.success ?? "");
-    });
-  }
-
-  return (
-    <div className="grid gap-1">
-      <button
-        className="inline-flex min-h-10 items-center justify-center gap-2 rounded-2xl border border-[#8A3A3A]/20 px-4 text-sm font-semibold text-[#8A3A3A] transition hover:bg-[#8A3A3A]/5 disabled:cursor-wait disabled:opacity-50"
-        disabled={isPending}
-        onClick={confirmAndDelete}
-        type="button"
-      >
-        <Trash2 aria-hidden="true" className="size-4" />
-        {isPending ? "Eliminando..." : "Eliminar"}
-      </button>
-      <p
-        aria-live="polite"
-        className={[
-          "min-h-5 text-xs font-semibold",
-          message.startsWith("No ") ? "text-[#8A3A3A]" : "text-[#24523D]",
-        ].join(" ")}
-      >
-        {message}
-      </p>
-    </div>
   );
 }

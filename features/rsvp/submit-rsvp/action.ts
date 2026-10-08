@@ -43,6 +43,12 @@ export async function submitRsvp(
   });
 
   if (error) {
+    if (error.message === "RSVP_CLOSED") {
+      return {
+        error: "El periodo de confirmacion ha finalizado.",
+      };
+    }
+
     return {
       error:
         error.message === "ATTENDEE_COUNT_EXCEEDS_PASSES"

@@ -10,6 +10,11 @@ type PublicInvitationRow = {
   event_slug: string;
   couple_name: string;
   event_date_label: string;
+  event_date: string | null;
+  event_timezone: string | null;
+  rsvp_deadline: string | null;
+  rsvp_deadline_label: string | null;
+  is_rsvp_closed: boolean | null;
   theme_id: string;
   palette_id: string;
   main_location_name: string;
@@ -27,6 +32,8 @@ type PublicEventRow = {
   event_slug: string;
   couple_name: string;
   event_date_label: string;
+  event_date: string | null;
+  event_timezone: string | null;
   theme_id: string;
   palette_id: string;
   main_location_name: string;
@@ -80,6 +87,8 @@ export async function getPublicInvitation(
       slug: row.event_slug,
       coupleName: row.couple_name,
       dateLabel: row.event_date_label,
+      eventDate: row.event_date,
+      eventTimezone: row.event_timezone,
       themeId: row.theme_id,
       paletteId: row.palette_id,
       mainLocationName: row.main_location_name,
@@ -95,6 +104,8 @@ export async function getPublicInvitation(
       response: row.response,
       attendeeCount: row.attendee_count ?? 1,
       attendeeNames: parseAttendeeNames(row.attendee_names),
+      deadlineLabel: row.rsvp_deadline_label,
+      isClosed: Boolean(row.is_rsvp_closed),
     },
   };
 }
@@ -128,6 +139,8 @@ async function getPublicEvent(
       slug: row.event_slug,
       coupleName: row.couple_name,
       dateLabel: row.event_date_label,
+      eventDate: row.event_date,
+      eventTimezone: row.event_timezone,
       themeId: row.theme_id,
       paletteId: row.palette_id,
       mainLocationName: row.main_location_name,

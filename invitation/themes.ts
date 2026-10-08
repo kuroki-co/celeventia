@@ -144,6 +144,20 @@ export const invitationPalettes = [
       border: "#E2C3CC",
     },
   },
+  {
+    id: "multicolor",
+    name: "Multicolor",
+    colors: {
+      background: "#FFFAF5",
+      surface: "#FFFFFF",
+      primary: "#273225",
+      secondary: "#A45F73",
+      accent: "#B89246",
+      text: "#20231F",
+      muted: "#6D7468",
+      border: "#D8C5A1",
+    },
+  },
 ] as const;
 
 export type InvitationThemeId = (typeof invitationThemes)[number]["id"];

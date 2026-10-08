@@ -3,6 +3,10 @@ import { redirect } from "next/navigation";
 
 import { DashboardSidebar } from "@/features/dashboard/main/DashboardSidebar";
 import { MobileDashboardNav } from "@/features/dashboard/main/MobileDashboardNav";
+import { AlbumUploadsList } from "@/features/album/list-uploads/AlbumUploadsList";
+import { getAlbumUploads } from "@/features/album/list-uploads/data";
+import { getSongSuggestions } from "@/features/music/list-suggestions/data";
+import { SongSuggestionsList } from "@/features/music/list-suggestions/SongSuggestionsList";
 import { ConfirmationsList } from "@/features/rsvp/list-responses/ConfirmationsList";
 import { getRsvpResponses } from "@/features/rsvp/list-responses/data";
 import { createClient } from "@/shared/supabase/server";
@@ -24,7 +28,17 @@ export default async function ConfirmationsPage() {
   let data;
 
   try {
-    data = await getRsvpResponses(supabase);
+    const [rsvpData, songSuggestions, albumUploads] = await Promise.all([
+      getRsvpResponses(supabase),
+      getSongSuggestions(supabase),
+      getAlbumUploads(supabase),
+    ]);
+
+    data = {
+      ...rsvpData,
+      albumUploads,
+      songSuggestions,
+    };
   } catch (error) {
     if (error instanceof Error && error.message === "EVENT_NOT_FOUND") {
       redirect("/admin/personal/onboarding");
@@ -62,6 +76,30 @@ export default async function ConfirmationsPage() {
 
           <section className="rounded-[22px] border border-midnight-navy/10 bg-white/82 p-5">
             <ConfirmationsList responses={data.responses} />
+          </section>
+
+          <section className="rounded-[22px] border border-midnight-navy/10 bg-white/82 p-5">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase text-muted-mauve">
+                Musica
+              </p>
+              <h2 className="mt-2 font-serif text-[2rem] font-semibold leading-tight text-midnight-navy">
+                Sugerencias
+              </h2>
+            </div>
+            <SongSuggestionsList suggestions={data.songSuggestions} />
+          </section>
+
+          <section className="rounded-[22px] border border-midnight-navy/10 bg-white/82 p-5">
+            <div className="mb-4">
+              <p className="text-xs font-semibold uppercase text-muted-mauve">
+                Album
+              </p>
+              <h2 className="mt-2 font-serif text-[2rem] font-semibold leading-tight text-midnight-navy">
+                Fotos recibidas
+              </h2>
+            </div>
+            <AlbumUploadsList uploads={data.albumUploads} />
           </section>
         </main>
       </div>

@@ -4,6 +4,8 @@ export type WeddingInvitationEvent = WeddingInvitationContent & {
   slug?: string;
   coupleName: string;
   dateLabel: string;
+  eventDate?: string | null;
+  eventTimezone?: string | null;
   themeId: InvitationThemeId | string;
   paletteId: InvitationPaletteId | string;
   mainLocationName?: string | null;
@@ -42,12 +44,30 @@ export type WeddingInvitationContent = {
   story?: Array<
     InvitationTimelineItem & {
       year?: string | number;
-      image?: string;
+      image?: MediaImageReference | string;
       imageUrl?: string;
       imageAlt?: string;
       order?: number;
     }
   >;
+  music?: {
+    enabled?: boolean;
+    title?: string;
+    artist?: string;
+    audio?: MediaAudioReference | string;
+    audioUrl?: string;
+    volume?: number;
+  } | null;
+  songSuggestions?: {
+    enabled?: boolean;
+    title?: string;
+    description?: string;
+  } | null;
+  collaborativeAlbum?: {
+    enabled?: boolean;
+    title?: string;
+    description?: string;
+  } | null;
   closingMessage?: string | null;
 };
 
@@ -81,11 +101,18 @@ export type MediaImageReference = {
   alt?: string;
 };
 
+export type MediaAudioReference = {
+  id?: string;
+  bucket?: string;
+  objectPath?: string;
+  url?: string;
+};
+
 export type GiftMethod = {
   title: string;
   description: string;
   enabled?: boolean;
-  kind?: "envelope" | "yape" | "bankTransfer" | "externalRegistry";
+  kind?: "envelope" | "yape" | "plin" | "bankTransfer" | "externalRegistry";
   owner?: string;
   phone?: string;
   bank?: string;
@@ -109,8 +136,12 @@ export type InvitationLocation = {
 };
 
 export type InvitationTimelineItem = {
+  id?: string;
   time?: string;
   date?: string;
+  dayOffset?: number;
+  iconKey?: "heart" | "mapPin" | "utensils" | "music" | "sparkles" | "camera";
+  order?: number;
   title: string;
   description?: string;
 };

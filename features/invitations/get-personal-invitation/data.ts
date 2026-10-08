@@ -27,6 +27,7 @@ export type PersonalInvitationEvent = {
   nameOrder: "partner_one_first" | "partner_two_first";
   eventDate: string | null;
   eventTimezone: string;
+  rsvpDeadline: string | null;
   city: string | null;
   isConfigured: boolean;
   draftRevision: number;
@@ -51,6 +52,7 @@ type EventRow = {
   name_order: "partner_one_first" | "partner_two_first" | null;
   event_date: string | null;
   event_timezone: string | null;
+  rsvp_deadline: string | null;
   city: string | null;
   is_configured: boolean | null;
   draft_revision: number | null;
@@ -97,6 +99,7 @@ export async function getPersonalInvitationEvent(
         "name_order",
         "event_date",
         "event_timezone",
+        "rsvp_deadline",
         "city",
         "is_configured",
         "draft_revision",
@@ -160,6 +163,7 @@ function mapEvent(row: EventRow): PersonalInvitationEvent {
     nameOrder: row.name_order ?? "partner_one_first",
     eventDate: row.event_date,
     eventTimezone: row.event_timezone ?? "America/Lima",
+    rsvpDeadline: row.rsvp_deadline,
     city: row.city,
     isConfigured: Boolean(row.is_configured),
     draftRevision: row.draft_revision ?? 1,

@@ -5,6 +5,8 @@ export type PublicInvitationData = {
     slug: string;
     coupleName: string;
     dateLabel: string;
+    eventDate?: string | null;
+    eventTimezone?: string | null;
     themeId: string;
     paletteId: string;
     mainLocationName: string;

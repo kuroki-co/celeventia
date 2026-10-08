@@ -42,6 +42,7 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
   );
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(true);
+  const [entryPreviewKey, setEntryPreviewKey] = useState(1);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const [message, setMessage] = useState("Guardado");
   const lastScrollYRef = useRef(0);
@@ -230,7 +231,7 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
   return (
     <div className="min-h-dvh bg-porcelain text-near-black">
       <WeddingInvitation
-        entryPreviewKey={1}
+        entryPreviewKey={entryPreviewKey}
         event={previewEvent}
         mode="preview"
       />
@@ -304,6 +305,15 @@ export function InvitationPreviewPage({ event }: InvitationPreviewPageProps) {
               <PencilLine aria-hidden="true" className="size-4" />
               Editar
             </Link>
+            <button
+              aria-label="Reproducir entrada"
+              className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-[16px] border border-midnight-navy/10 bg-white px-3.5 text-sm font-bold text-midnight-navy shadow-sm transition-colors hover:border-muted-mauve/30 hover:bg-porcelain hover:text-muted-mauve focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-muted-mauve sm:px-4"
+              onClick={() => setEntryPreviewKey((current) => current + 1)}
+              type="button"
+            >
+              <RotateCcw aria-hidden="true" className="size-4" />
+              Entrada
+            </button>
             <button
               ref={triggerRef}
               aria-label="Diseño"

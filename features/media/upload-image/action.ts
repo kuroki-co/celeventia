@@ -10,6 +10,7 @@ import type {
   HeroImage,
   InvitationLocation,
   MediaImageReference,
+  WeddingInvitationContent,
 } from "@/invitation/renderer/types";
 import { createClient } from "@/shared/supabase/server";
 
@@ -19,7 +20,9 @@ import {
   maxImageSizeBytes,
 } from "./limits";
 
-export type UploadPurpose = "gallery" | "invitation" | "location";
+type LocationKind = "Ceremonia" | "Lugar adicional" | "Recepcion";
+
+export type UploadPurpose = "gallery" | "invitation" | "location" | "story";
 
 export type PreparedImageUpload = {
   bucket: string;
@@ -41,16 +44,18 @@ const allowedImageTypeSchema = z.enum(
 const prepareUploadSchema = z.object({
   eventId: z.string().uuid(),
   fileName: z.string().trim().min(1).max(240),
-  locationKind: z.enum(["Ceremonia", "Recepcion"]).optional(),
+  locationKind: z.enum(["Ceremonia", "Lugar adicional", "Recepcion"]).optional(),
   mimeType: allowedImageTypeSchema,
-  purpose: z.enum(["invitation", "gallery", "location"]),
+  purpose: z.enum(["invitation", "gallery", "location", "story"]),
+  storyItemId: z.string().trim().min(1).max(120).optional(),
   sizeBytes: z.number().int().positive().max(maxImageSizeBytes),
 });
 
 const finalizeUploadSchema = z.object({
   eventId: z.string().uuid(),
-  locationKind: z.enum(["Ceremonia", "Recepcion"]).optional(),
-  purpose: z.enum(["invitation", "gallery", "location"]),
+  locationKind: z.enum(["Ceremonia", "Lugar adicional", "Recepcion"]).optional(),
+  purpose: z.enum(["invitation", "gallery", "location", "story"]),
+  storyItemId: z.string().trim().min(1).max(120).optional(),
   uploads: z
     .array(
       z.object({
@@ -77,6 +82,22 @@ const finalizeUploadSchema = z.object({
       path: ["uploads"],
     });
   }
+
+  if (value.purpose === "story" && !value.storyItemId) {
+    context.addIssue({
+      code: "custom",
+      message: "Selecciona el hito de historia.",
+      path: ["storyItemId"],
+    });
+  }
+
+  if (value.purpose === "story" && value.uploads.length !== 1) {
+    context.addIssue({
+      code: "custom",
+      message: "Sube una sola imagen para el hito.",
+      path: ["uploads"],
+    });
+  }
 });
 
 type FinalizeUploadInput = z.input<typeof finalizeUploadSchema>;
@@ -84,9 +105,10 @@ type FinalizeUploadInput = z.input<typeof finalizeUploadSchema>;
 export async function prepareInvitationImageUpload(input: {
   eventId: string;
   fileName: string;
-  locationKind?: "Ceremonia" | "Recepcion";
+  locationKind?: LocationKind;
   mimeType: string;
   purpose: UploadPurpose;
+  storyItemId?: string;
   sizeBytes: number;
 }): Promise<PreparedImageUpload | { error: string }> {
   const parsed = prepareUploadSchema.safeParse(input);
@@ -97,6 +119,10 @@ export async function prepareInvitationImageUpload(input: {
 
   if (parsed.data.purpose === "location" && !parsed.data.locationKind) {
     return { error: "Selecciona el lugar de la imagen." };
+  }
+
+  if (parsed.data.purpose === "story" && !parsed.data.storyItemId) {
+    return { error: "Selecciona el hito de historia." };
   }
 
   const supabase = await createClient();
@@ -229,7 +255,8 @@ export async function finalizeInvitationImageUpload(
             ),
           ],
         }
-        : {
+      : parsed.data.purpose === "location"
+        ? {
             ...event.content,
             locations: getLocationsWithImage(
               event.content.locations,
@@ -237,6 +264,17 @@ export async function finalizeInvitationImageUpload(
               {
                 ...uploadedMedia[0],
                 alt: `${parsed.data.locationKind ?? "Lugar"} de la boda`,
+              },
+            ),
+          }
+        : {
+            ...event.content,
+            story: getStoryWithImage(
+              event.content.story,
+              parsed.data.storyItemId ?? "",
+              {
+                ...uploadedMedia[0],
+                alt: "Foto de nuestra historia",
               },
             ),
           };
@@ -296,14 +334,26 @@ function getNextGalleryOrder(images: GalleryImage[] | undefined) {
 
 function getPurposeFolder(
   purpose: UploadPurpose,
-  locationKind?: "Ceremonia" | "Recepcion",
+  locationKind?: LocationKind,
 ) {
   if (purpose === "invitation") {
     return "invitation";
   }
 
   if (purpose === "location") {
-    return `locations/${locationKind === "Recepcion" ? "reception" : "ceremony"}`;
+    if (locationKind === "Recepcion") {
+      return "locations/reception";
+    }
+
+    if (locationKind === "Lugar adicional") {
+      return "locations/extra";
+    }
+
+    return "locations/ceremony";
+  }
+
+  if (purpose === "story") {
+    return "story";
   }
 
   return "gallery";
@@ -325,7 +375,7 @@ async function verifyUploadedObject(
   supabase: Awaited<ReturnType<typeof createClient>>,
   eventId: string,
   purpose: UploadPurpose,
-  locationKind: "Ceremonia" | "Recepcion" | undefined,
+  locationKind: LocationKind | undefined,
   upload: {
     mimeType: string;
     objectPath: string;
@@ -379,7 +429,7 @@ async function verifyUploadedObject(
 
 function getLocationsWithImage(
   locations: InvitationLocation[] | undefined,
-  locationKind: "Ceremonia" | "Recepcion",
+  locationKind: LocationKind,
   image: MediaImageReference,
 ): InvitationLocation[] {
   const existingLocations = locations?.length
@@ -399,6 +449,42 @@ function getLocationsWithImage(
           image,
         }
       : location,
+  );
+}
+
+function getStoryWithImage(
+  story: WeddingInvitationContent["story"],
+  storyItemId: string,
+  image: MediaImageReference,
+): WeddingInvitationContent["story"] {
+  const existingStory = story?.length
+    ? story
+    : [
+        {
+          id: storyItemId,
+          order: 0,
+          title: "Momento sin titulo",
+        },
+      ];
+  const hasTarget = existingStory.some((item) => item.id === storyItemId);
+  const nextStory = hasTarget
+    ? existingStory
+    : [
+        ...existingStory,
+        {
+          id: storyItemId,
+          order: existingStory.length,
+          title: "Momento sin titulo",
+        },
+      ];
+
+  return nextStory.map((item) =>
+    item.id === storyItemId
+      ? {
+          ...item,
+          image,
+        }
+      : item,
   );
 }
 

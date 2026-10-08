@@ -60,7 +60,7 @@ export function ConfirmationsList({ responses }: ConfirmationsListProps) {
         <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
           Buscar
           <input
-            className="min-h-11 rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition focus:border-muted-mauve"
+            className="min-h-11 rounded-2xl border border-midnight-navy/12 bg-white px-4 text-sm font-medium text-midnight-navy shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none transition placeholder:text-midnight-navy/38 hover:border-midnight-navy/22 focus:border-muted-mauve focus:ring-4 focus:ring-muted-mauve/10"
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Invitado o asistente"
             value={query}
@@ -69,7 +69,7 @@ export function ConfirmationsList({ responses }: ConfirmationsListProps) {
         <label className="grid gap-2 text-sm font-semibold text-midnight-navy">
           Respuesta
           <select
-            className="min-h-11 rounded-2xl border border-midnight-navy/10 bg-porcelain px-4 text-sm text-midnight-navy outline-none transition focus:border-muted-mauve"
+            className="min-h-11 appearance-none rounded-2xl border border-midnight-navy/12 bg-white bg-[url('data:image/svg+xml,%3Csvg%20xmlns=%22http://www.w3.org/2000/svg%22%20width=%2216%22%20height=%2216%22%20viewBox=%220%200%2024%2024%22%20fill=%22none%22%20stroke=%22%238E6C88%22%20stroke-width=%222.2%22%20stroke-linecap=%22round%22%20stroke-linejoin=%22round%22%3E%3Cpath%20d=%22m6%209%206%206%206-6%22/%3E%3C/svg%3E')] bg-[position:right_1rem_center] bg-no-repeat px-4 pr-11 text-sm font-medium text-midnight-navy shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] outline-none transition hover:border-midnight-navy/22 focus:border-muted-mauve focus:ring-4 focus:ring-muted-mauve/10"
             onChange={(event) => setFilter(event.target.value as FilterValue)}
             value={filter}
           >

@@ -775,6 +775,10 @@ function SimpleEnvelope({
         ].join(" ")}
       />
       <div className="absolute left-1/2 top-[57%] z-20 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[color:var(--inv-accent)]/70 bg-[color:var(--inv-surface)] text-[color:var(--inv-primary)] shadow-[0_12px_30px_rgba(16,42,67,0.14)]">
+        <MaskedEntryAsset
+          className="absolute inset-1 text-[color:var(--inv-accent)]/38"
+          src="/wedding-themes/shared/seals/rosette-seal.svg"
+        />
         <span className="font-serif text-2xl">
           {getEntryInitials(initials)}
         </span>
@@ -846,12 +850,40 @@ function TerraEnvelope({ isOpen }: { isOpen: boolean }) {
           isOpen ? "[transform:rotateX(-46deg)_scaleY(0.78)] opacity-88" : "",
         ].join(" ")}
       />
-      <img
-        alt=""
-        className="absolute left-1/2 top-[56%] z-20 size-20 -translate-x-1/2 -translate-y-1/2 object-contain sm:size-24"
-        src="/wedding-themes/shared/seals/gold-wax-seal.png"
-      />
+      <span className="absolute left-1/2 top-[56%] z-20 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[color:var(--inv-surface)]/92 text-[color:var(--inv-accent)] shadow-[0_12px_30px_rgba(16,42,67,0.16)] sm:size-24">
+        <MaskedEntryAsset
+          className="absolute inset-1.5"
+          src="/wedding-themes/shared/seals/rosette-seal.svg"
+        />
+      </span>
     </div>
+  );
+}
+
+function MaskedEntryAsset({
+  className,
+  src,
+}: {
+  className: string;
+  src: string;
+}) {
+  return (
+    <span
+      aria-hidden="true"
+      className={["pointer-events-none bg-current", className].join(" ")}
+      style={
+        {
+          WebkitMaskImage: `url(${src})`,
+          WebkitMaskPosition: "center",
+          WebkitMaskRepeat: "no-repeat",
+          WebkitMaskSize: "contain",
+          maskImage: `url(${src})`,
+          maskPosition: "center",
+          maskRepeat: "no-repeat",
+          maskSize: "contain",
+        } as CSSProperties
+      }
+    />
   );
 }
 

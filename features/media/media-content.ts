@@ -23,6 +23,8 @@ export function stripTransientMediaUrls(
     galleryImages: content.galleryImages?.map(stripGalleryImageUrl),
     heroImage: stripHeroImageUrl(content.heroImage),
     locations: content.locations?.map(stripLocationImageUrl),
+    music: stripMusicAudioUrl(content.music),
+    story: content.story?.map(stripStoryImageUrl),
   };
 }
 
@@ -54,6 +56,8 @@ export async function resolveInvitationMediaUrls(
     locations: content.locations?.map((location) =>
       resolveLocationImageUrl(location, signedUrls),
     ),
+    music: resolveMusicAudioUrl(content.music, signedUrls),
+    story: content.story?.map((item) => resolveStoryImageUrl(item, signedUrls)),
   };
 }
 
@@ -79,6 +83,20 @@ export function collectMediaReferences(content: WeddingInvitationContent) {
     if (reference) {
       references.push(reference);
     }
+  }
+
+  for (const item of content.story ?? []) {
+    const reference = getStoryImageReference(item);
+
+    if (reference) {
+      references.push(reference);
+    }
+  }
+
+  const music = getMusicAudioReference(content.music);
+
+  if (music) {
+    references.push(music);
   }
 
   return references;
@@ -156,6 +174,42 @@ function stripLocationImageUrl(location: InvitationLocation): InvitationLocation
   };
 }
 
+function stripStoryImageUrl(
+  item: NonNullable<WeddingInvitationContent["story"]>[number],
+): NonNullable<WeddingInvitationContent["story"]>[number] {
+  if (!item.image || typeof item.image === "string") {
+    return item;
+  }
+
+  const image = { ...item.image };
+  delete image.url;
+
+  return {
+    ...item,
+    image,
+  };
+}
+
+function stripMusicAudioUrl(
+  music: WeddingInvitationContent["music"],
+): WeddingInvitationContent["music"] {
+  if (!music?.audio || typeof music.audio === "string") {
+    return music;
+  }
+
+  const audio = { ...music.audio };
+  delete audio.url;
+
+  const nextMusic = {
+    ...music,
+    audio,
+  };
+
+  delete nextMusic.audioUrl;
+
+  return nextMusic;
+}
+
 function resolveHeroImageUrl(
   image: WeddingInvitationContent["heroImage"],
   signedUrls: Map<string, string>,
@@ -213,10 +267,95 @@ function resolveLocationImageUrl(
   };
 }
 
+function resolveStoryImageUrl(
+  item: NonNullable<WeddingInvitationContent["story"]>[number],
+  signedUrls: Map<string, string>,
+): NonNullable<WeddingInvitationContent["story"]>[number] {
+  if (!item.image || typeof item.image === "string") {
+    return item;
+  }
+
+  if (!item.image.objectPath) {
+    return item;
+  }
+
+  return {
+    ...item,
+    image: {
+      ...item.image,
+      url: signedUrls.get(item.image.objectPath),
+    },
+  };
+}
+
+function resolveMusicAudioUrl(
+  music: WeddingInvitationContent["music"],
+  signedUrls: Map<string, string>,
+): WeddingInvitationContent["music"] {
+  if (!music?.audio || typeof music.audio === "string") {
+    return music;
+  }
+
+  if (!music.audio.objectPath) {
+    return music;
+  }
+
+  const signedUrl = signedUrls.get(music.audio.objectPath);
+
+  return {
+    ...music,
+    audio: {
+      ...music.audio,
+      url: signedUrl,
+    },
+    audioUrl: signedUrl,
+  };
+}
+
 function getLocationImageReference(
   location: InvitationLocation,
 ): MediaReference | null {
   const image = location.image;
+
+  if (!image || typeof image === "string") {
+    return null;
+  }
+
+  if (!image.id || !image.objectPath) {
+    return null;
+  }
+
+  return {
+    bucket: image.bucket ?? "event-media",
+    id: image.id,
+    objectPath: image.objectPath,
+  };
+}
+
+function getMusicAudioReference(
+  music: WeddingInvitationContent["music"],
+): MediaReference | null {
+  const audio = music?.audio;
+
+  if (!audio || typeof audio === "string") {
+    return null;
+  }
+
+  if (!audio.id || !audio.objectPath) {
+    return null;
+  }
+
+  return {
+    bucket: audio.bucket ?? "event-media",
+    id: audio.id,
+    objectPath: audio.objectPath,
+  };
+}
+
+function getStoryImageReference(
+  item: NonNullable<WeddingInvitationContent["story"]>[number],
+): MediaReference | null {
+  const image = item.image;
 
   if (!image || typeof image === "string") {
     return null;
